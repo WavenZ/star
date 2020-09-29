@@ -12,58 +12,64 @@ from sklearn.decomposition import PCA
 import os
 
 def pca(points, xref, yref):
-    '''通过主成分分析计算星点的运动角度
+    '''incipal component analysis (PCA) is used to estimate 
+    the motion direction of star points.
         
-    参数：
-        points: 星点坐标，shape = (2, n)
-        xref: 窗口左上角的 x 坐标
-        yref: 窗口右上角的 y 坐标
+    Args：
+        points: Star coordinates，shape = (2, n)
+        xref: The x-coordinate of the upper left corner of the window.
+        yref: The y-coordinate of the upper right corner of the window.
     
-    返回值:
-        返回星点所在位置直线的参数 (k, b) 或者 (0, 0)
+    Returns:
+        The slope (k) and intercept (b) of the linear equation.
     '''
-    # 转置一下
+    # Transpose.
     data = points.T
     
-    # 主成分分析
+    # PCA
     pca = PCA()
     pca.fit(data)
-    if pca.components_[0, 0]: # 防止分母为0 
+    if pca.components_[0, 0]:   # Avoid division by zero error.
         k = pca.components_[0, 1] / pca.components_[0, 0]
     else:
         k = 999999
-    if k * (xref + np.mean(points[0])): # 防止分母为0
+    if k * (xref + np.mean(points[0])):     # Avoid division by zero error.
         b = np.mean(yref + points[1]) + 1 / k * (xref + np.mean(points[0]))
     else:
         b = 999999
     
-    # dx, dy 为所有点的 x 和 y 坐标范围，用以辅助设置第一主成分的限制（下限）
+    # dx and dy are the x and y ranges，respectively.
+    # Used to set the limit of the first principal component（lower limit）.
     dx = np.max(data[:, 0]) - np.min(data[:, 0])
     dy = np.max(data[:, 1]) - np.min(data[:, 1])
     # print(dx, dy, end = ' ')
     # print(pca.explained_variance_ratio_[0])
     
-    # limit 第一主成分的最小值，范围为[0.9 - 0.99]
-    # 星点越短，则对第一主成分大小的要求减小
+    # limit: Minimun value of first principal compnent，which is in the 
+    # range of [0.9 - 0.99]
+    # The shorter the star is, the smaller the requirement for 
+    # the size of the first principal component is.
     limit = 0.9 + 0.003 * (dx + dy)
     if limit > 0.99:
         limit = 0.99
-    if pca.explained_variance_ratio_[0] > limit: # 第一主成分大于limit
+    # The first principal component is greater than the limit.
+    if pca.explained_variance_ratio_[0] > limit: 
         # print(pca.explained_variance_ratio_[0])
         return k, b
-    return 0, 0 # 直接判定为非星点
+    return 0, 0 # Directly identified as a fake star.
 
 def threshold(img, n):
-    """阈值化
+    """Thresholding.
 
-    根据灰度分布直方图，找到窗口中前 n 个灰阶的点
+    Search the first N gray scales in the window according to 
+    the gray distribution histogram.
     
-    参数: 
-        img: 图像
-        n: 阈值化之后为 255 的灰阶数
+    Args: 
+        img: Target mage.
+        n: The first N gray scale that will be threshold to 255.
 
-    返回值:
-        阈值化之后的图像
+    Returns:
+        Image after thresholding.
     """
     hist = cv2.calcHist([img],[0],None,[256],[0,256])
     th = 0
@@ -74,69 +80,70 @@ def threshold(img, n):
                 th = 255 - k - 1
                 break
     # print(th)
-    ret, thImg = cv2.threshold(img,th,255,cv2.THRESH_BINARY)
+    _, thImg = cv2.threshold(img,th,255,cv2.THRESH_BINARY)
     return thImg
 
 def Cluster(coordins):
-    '''聚类，用于去除远离星点噪声
+    '''Used to filter out noise far away from stars.
 
-    参数:
-        coordins: 坐标，shape = (2, n)
+    Args:
+        coordins: shape = (2, n)
     
-    返回值: 
-        聚类的结果（若干个组）
+    Returns: 
+        Results of clustering (several groups).
     '''
     data = coordins.T
-    # eps:可以看做类的最大间距
-    # min_samples:类的最小点数
+    # eps: The max distance between classes.
+    # min_samples: The min number of points in a class.
     pred = DBSCAN(eps = 20, min_samples = 5).fit_predict(data)
     groups = []
     for i in np.unique(pred):
         cnt = list(pred).count(i)
-        if cnt > 0.9 * pred.size: # 单个类的点数大于总点数的90%
+        # The number of points in a single class is grater than 90% of the total.
+        if cnt > 0.9 * pred.size: 
             groups.append(coordins[:, np.where(pred == i)].squeeze(1))
     return groups
 
 def mean_value(values):
-    '''求均值，只取靠得最近的前 80% 的值用来求均值
+    '''Calculate the mean value by nearest 80% values。
     
-    参数: 
-        values: 要求的均值的集合
+    Args: 
+        values: The set that we need to calculate the mean value.
     
-    返回值:
-        均值
+    Returns:
+        Mean value.
     '''
     if len(values) < 2:
         return np.mean(values)
-    # 去均值化
+    # Substract the mean value.
     diff = np.abs(values - np.mean(values))
-    # 根据误差排序
+    # Sorted by error.
     data = np.vstack((diff, values)).T
     data = data[np.argsort(data[:,0])]
     return np.mean(data[:round(len(data) * 0.8), 1])
 
 def mean_value2(values, limit):
-    '''求均值
+    '''Calculate the mean value.
 
-    通过限定方差的大小来滤除一些无效数据
+    Filter out some invalid data by limiting the variance.
 
-    参数:
-        values: 要计算均值的数据
-        limit: 限定的方差大小
+    Args:
+        values: The set that we need to calculate the mean value.
+        limit: The limit of variance.
     
-    返回值:
-        经过方差滤除之后的数据的均值
+    Returns:
+        Mean value.
     '''
 
-    # 数据量小于等于 2, 直接返回均值
+    # Directly return mean value while num of values less than 2.
     n = len(values)
     if n <= 2:
         return np.mean(values)
     
-    # 先进行排序
+    # Sort first.
     values = np.sort(values)
     std = np.std(values)
-    # 迭代计算
+    # Iterative calculation.
     while len(values) >= max(2, 0.7 * n) or std > limit:
         stda = np.std(values[1:])
         stdb = np.std(values[: -1])
@@ -150,61 +157,61 @@ def mean_value2(values, limit):
     return np.mean(values)
 
 def Direction_estimate(image):
-    '''对单张星图进行星点运动的方向估计'''
+    '''Estimate the direction of a single image.'''
     
-    # 窗口大小
+    # Size of window and image.
     winsize = 100 
     rowsize, colsize = image.shape
     
-    # 结果向量
+    # Result.
     Theta = list([])
 
     for i in range(rowsize // winsize):
         for j in range(colsize // winsize):
-            # 星图中的一个窗口
+            # A window of star image.
             window = image[i * winsize : (i + 1) * winsize, j * winsize : (j + 1) * winsize] 
             mean = np.mean(window)
-            # 均值过大（太亮），跳过
+            # Skip while it's too bright.
             if mean > 180: 
                 continue
             
-            # 阈值化图像
+            # Threshoulding.
             thImg = threshold(window, 6) 
             
-            # 取阈值化图像中亮点的坐标
+            # Get the coordinates of positive points.
             points = np.array(np.where(thImg == 255)) 
-            # 亮点分布太分散，跳过
+            # Skip while the distribution is too scattered.
             if np.std(points[0]) + np.std(points[1]) > 50: 
                 continue
 
-            # 坐标转化
+            # Coordinate transformation.
             coordins = np.vstack((points[1], winsize - 1 - points[0])) 
             
-            # 去除噪声，同时分离窗口中的多个星点
+            # Filter out the noise and seperate different star in the window.
             groups = Cluster(coordins) 
 
             # plt.figure()
             # plt.imshow(thImg, cmap = 'gray')
             # plt.show()
             for group in groups:
-                # 主成分分析计算角度
                 theta = pca(group, winsize * j, image.shape[0] - winsize * (i + 1))
-                # (0, 0) 表示图中无星点
+                # (0, 0) indicates that there are no stars in the window.
                 if theta != (0, 0):
                     Theta.append(theta[0])
 
     # print(np.arctan(np.array(Theta)) * 180 / np.pi)
     
-    # 去除非法值
+    # Remove invalid value.
     for i in range(len(Theta)):
         if Theta[i] == float('inf'):
             Theta[i] = -99999
 
-    # 如果一个星点都没估计出，直接返回
+    # Return if Theta is null.
     if len(Theta) == 0: 
         return 0
 
-    # 如果大于10，则表示星点运动方向在 ±90 左右，求均值需要特殊处理
+    # If it is greater than 10, it means that the motion direction of 
+    # the star point is about ±90, and the mean value requires special treatment.
     if np.mean(np.abs(Theta)) > 10: 
         res = np.arctan(Theta) * 180 / np.pi
         res = list(map(lambda x : x if x > 0 else 180 + x, res))
@@ -213,11 +220,11 @@ def Direction_estimate(image):
             res = res - 180
     else:
         res = np.arctan(mean_value2(np.array(Theta), 2)) * 180 / np.pi
-    # 方向的估计值
+    # Result.
     return res 
 
 def imshow(*images):
-    '''显示星图'''
+    '''Show the image.'''
 
     for image in images:
         plt.figure()
@@ -225,12 +232,14 @@ def imshow(*images):
     plt.show()
 
 def Kernel(size, width, theta):
-    """构造卷积核
+    """Construct the convolution kernel.
         
-    参数: size：卷积核尺寸
-          width：正区域宽度
-          theta：角度
-    注：(size - width)最好是偶数，以使得卷积核对称
+    Args: size：size of kernel, (Height, Width)
+          width：Width of the positive region.
+          theta：Rotation angle.
+    
+    Notes：
+        (size - width) shoule be even, so that the converlution kernel is symmetric.
     """
 
     temp = np.zeros((size + 10,size + 10))

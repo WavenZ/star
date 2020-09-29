@@ -1,7 +1,11 @@
-import numpy as np
-import est
-import cv2
 import os
+import cv2
+import numpy as np
+
+from cv2 import cv2
+
+import est
+
 
 if __name__ == "__main__":
     src =  r'C:\Users\14355\star\image\b\5_1_55.png'
