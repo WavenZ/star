@@ -6,9 +6,8 @@ import matplotlib.pyplot as plt
 class StarGenerator(object):
     
     def __init__(self, filename, figsize = (2048, 2048)):
-        '''
-            初始化
-        '''
+        '''初始化'''
+
         self.filename = filename
         self.figsize = figsize
         self.stars = self.parse_catalogue()
@@ -18,9 +17,21 @@ class StarGenerator(object):
 
 
     def generate(self, pitch, yaw, roll, starsize = 1.3, winvisible = False, winradius = 50):
+        '''生成星图
+        
+        参数:
+            pitch: 俯仰角（角度制，下同）
+            yaw: 偏航角
+            roll: 横滚角
+            starsize: 星点大小
+            winvisible: 星点高亮窗口
+            winradius: 高亮窗口半径
         '''
-            生成星图
-        '''
+
+        # 空白图像
+        img = np.zeros((2048, 2048))
+
+
         self.pitch = self.to_rad(pitch)
         self.yaw = self.to_rad(yaw)
         self.roll = self.to_rad(roll)
@@ -79,34 +90,45 @@ class StarGenerator(object):
         return img, y.shape[1]
 
     def add_noise(self, img, sigma):
+        '''添加噪声
+        
+        添加高斯噪声
+
+        参数:
+            img: 图像
+            sigma: 噪声增益，即标准高斯噪声的倍数
         '''
-            添加噪声
-        '''
+
         h, w = img.shape
         noise = np.random.randn(h, w) * sigma
         img += noise
 
     def to_rad(self, angle):
-        '''
-            角度转弧度
-        '''
+        '''角度转弧度'''
+
         return angle / 180 * np.pi
     
     def parse_catalogue(self):
-        '''
-            读星库
-        '''
+        '''读星库'''
+
         return np.loadtxt(self.filename, dtype = float)[:, :4]
 
     def gaussian(self, E, delta, x, y, x0, y0):
-        '''
-            二维高斯函数
-        '''
+        '''二维高斯函数'''
+
         return E / (2 * np.pi * delta ** 2) * np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * delta ** 2))
 
     def put_stars(self, img, x0, y0, E, delta = 1.3, winvisible = False, winradius = 50):
-        '''
-            添加星点
+        '''添加星点
+
+        在图像中指定位置添加星点
+
+        参数:
+            img: 图像
+            x0, y0: 坐标位置
+            E: 能量强度
+            winvisible: 星点高亮窗口
+            winradius: 高亮窗口半径
         '''
         up = x0 - winradius if x0 - winradius >= 0 else 0
         down = x0 + winradius + 1 if x0 + winradius + 1 <= img.shape[0] else img.shape[0]
@@ -123,6 +145,7 @@ class StarGenerator(object):
 
 
 if __name__ == "__main__":
+
     G = StarGenerator('sao60')
     pitch, yaw, roll = 0, 0, 0
     img, starnum = G.generate(pitch, yaw, roll, winvisible = False)

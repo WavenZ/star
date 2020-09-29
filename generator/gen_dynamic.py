@@ -89,7 +89,7 @@ class StarGenerator(object):
 
             # 在星图中绘制星点
             for i in range(y.shape[1]):
-                self.put_stars(img, y[0, i], y[1, i], 100000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
+                self.put_stars(img, y[0, i], y[1, i], 10000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
                             starsize, winvisible, winradius)
 
         # 添加噪声

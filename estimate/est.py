@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 # import pandas as pd
 
 from PIL import Image
+from cv2 import cv2
 from scipy.stats import entropy
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA

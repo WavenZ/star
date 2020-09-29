@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import estimate.est as ae
+import generator.gen_dynamic as gd
 import cv2
 import os
 
@@ -38,3 +39,12 @@ if __name__ == "__main__":
         plt.ylim((-1, 1))
         plt.scatter(x, np.array(directions) - 45)
         plt.show()
+
+    # G = gd.StarGenerator('sao60')
+    # pitch, yaw, roll = 10, 30, 60
+    # pitchspd, yawspd, rollspd = 0, 5, 0
+    # img, starnum = G.generate(pitch, yaw, roll, pitchspd, yawspd, rollspd, winvisible = False)
+    # print('[starnum]:', starnum)
+    # plt.figure()
+    # plt.imshow(img, cmap='gray', )
+    # plt.show()
