@@ -6,9 +6,7 @@ import matplotlib.pyplot as plt
 class StarGenerator(object):
 
     def __init__(self, filename, figsize = (2048, 2048)):
-        '''
-            初始化
-        '''
+        '''Initialization.'''
         self.filename = filename
         self.figsize = figsize
         self.stars = self.parse_catalogue()
@@ -33,9 +31,7 @@ class StarGenerator(object):
         return R
 
     def generate(self, pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure = 100, starsize = 1.3, winvisible = False, winradius = 50, noise = 3):
-        '''
-            生成星图
-        '''
+        '''Generate star image.'''
         img = np.zeros(self.figsize)
 
 
@@ -63,64 +59,62 @@ class StarGenerator(object):
             # print(delta_R)
             R = delta_R.dot(R)
 
-            # 视轴指向
+            # Optical axis direction.
             rx = np.cos(origin_pitch) * np.cos(origin_yaw)
             ry = np.cos(origin_pitch) * np.sin(origin_yaw)
             rz = np.sin(origin_pitch)
 
-            # 转换为天球坐标系
+            # Converto to celestial sphere.
             X = np.array([np.cos(self.stars[:, 3]) * np.cos(self.stars[:, 2]),
                         np.cos(self.stars[:, 3]) * np.sin(self.stars[:, 2]),
                         np.sin(self.stars[:, 3])])
 
-            # 筛选出星敏正面的星点
+            # Screen out the front stars.
             num = self.stars.shape[0]
             starID = np.linspace(0, num, num, endpoint = False)
             starID = starID[np.where(np.inner(X.T, [rx, ry, rz]) > 0)]
             X = X.T[np.where(np.inner(X.T, [rx, ry, rz]) > 0)].T
 
-            # 将星点投影到图像平面
+            # Project the star to the iamge plane.
             x = self.K.dot(R).dot(X).reshape(3, -1)
             y = np.array([(x[1] / x[2]), (x[0] / x[2])])
 
-            # 筛选出落在视场内的星点
+            # Select the stars in the field of view.
             starID = starID[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))]
             y = y.T[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))].T
 
-            # 在星图中绘制星点
+            # Place stars in image.
             for i in range(y.shape[1]):
                 self.put_stars(img, y[0, i], y[1, i], 10000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
                             starsize, winvisible, winradius)
 
-        # 添加噪声
+        # Add noise.
         img[np.where(img > 255)] = 255
         img[np.where(img < 0)] = 0
         self.add_noise(img, noise)
-        # 灰度截取
+        # Grayscale inerception.
         img[np.where(img > 255)] = 255
         img[np.where(img < 0)] = 0
         return img, y.shape[1]
     def generateMulti(self, pitch, yaw, roll, pitchspd_max, yawspd_max, rollspd_max, 
                         pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 100, 
                         starsize = 1.3, winvisible = False, winradius = 50, noise = 3, frames = 10):
-        '''
-            生成多帧星图
-        '''
+        '''Gernertate continuous frames images.'''
 
-        # 角度转弧度
+        # Angle to raidan.
         origin_pitch = self.to_rad(pitch)
         origin_yaw = self.to_rad(yaw)
         origin_roll = self.to_rad(roll)
 
-        # 视轴指向
+        # Optical axis direction.
         rx = np.cos(origin_pitch) * np.cos(origin_yaw)
         ry = np.cos(origin_pitch) * np.sin(origin_yaw)
         rz = np.sin(origin_pitch)
 
-        # 原始旋转矩阵
+        # Original rotation matrix.
         R = self.rotate(origin_pitch, origin_yaw, origin_roll)
 
-        # 星表中所有星点坐标转换为天球坐标系
+        # Convert to celestial sphere.
         X = np.array([np.cos(self.stars[:, 3]) * np.cos(self.stars[:, 2]),
                       np.cos(self.stars[:, 3]) * np.sin(self.stars[:, 2]),
                       np.sin(self.stars[:, 3])])
@@ -136,10 +130,10 @@ class StarGenerator(object):
 
             img = np.zeros(self.figsize)
 
-            # 仿真粒度为 1ms
+            # The simulation granularity is 1ms
             for j in range(exposure):
 
-                # 更新角速度
+                # Update the angular velocity.
                 if pitchspd < pitchspd_max:
                     pitchspd += (pitchspd_acc / 1000)
                 if yawspd < yawspd_max:
@@ -147,78 +141,73 @@ class StarGenerator(object):
                 if rollspd < rollspd_max:
                     rollspd += (rollspd_acc / 1000)
 
-                # 更新姿态
+                # Update the attitude.
                 delta_pitch += self.to_rad(pitchspd / 1000)
                 delta_yaw += self.to_rad(yawspd / 1000)
                 delta_roll += self.to_rad(rollspd / 1000)
 
-                # 更新姿态矩阵
+                # Update the attitude matrix.
                 delta_R = self.rotate(delta_pitch, delta_yaw, delta_roll)
                 R = delta_R.dot(R)
 
 
-                # 筛选出星敏正面的星点
+                # Screen out the front stars.
                 num = self.stars.shape[0]
                 starID = np.linspace(0, num, num, endpoint = False)
                 starID = starID[np.where(np.inner(X.T, [rx, ry, rz]) > 0)]
                 X = X.T[np.where(np.inner(X.T, [rx, ry, rz]) > 0)].T
 
-                # 将星点投影到图像平面
+                # Project the star to the image plane.
                 x = self.K.dot(R).dot(X).reshape(3, -1)
                 y = np.array([(x[1] / x[2]), (x[0] / x[2])])
 
-                # 筛选出落在视场内的星点
+                # Select the stars in the field of view.
                 starID = starID[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))]
                 y = y.T[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))].T
 
                 # print(y[1][5:10])
-                # 在星图中绘制星点
+                # Place stars in image.
                 for i in range(y.shape[1]):
                     self.put_stars(img, y[0, i], y[1, i], 10000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
                                 starsize, winvisible, winradius)
 
-            # 添加噪声
+            # Add some noise.
             img[np.where(img > 255)] = 255
             img[np.where(img < 0)] = 0
             self.add_noise(img, noise)
 
-            # 灰度截取
+            # GrayScale interception.
             img[np.where(img > 255)] = 255
             img[np.where(img < 0)] = 0
 
-            # 保存图像
+            # Save image.
             plt.imsave('./graph/dynamic/multi_frame/b_0_5_10_120/{}.png'.format(k + 1), img, cmap = 'gray', vmin = 0, vmax = 255)
 
     def add_noise(self, img, sigma):
-        '''
-            添加噪声
-        '''
+        '''Add some noise'''
+
         h, w = img.shape
         noise = np.random.randn(h, w) * sigma + 10
         img += noise
 
     def to_rad(self, angle):
-        '''
-            角度转弧度
-        '''
+        '''Angle to radian.'''
+
         return angle / 180 * np.pi
 
     def parse_catalogue(self):
-        '''
-            读星库
-        '''
+        '''Parse the specified catalogue.'''
+
         return np.loadtxt(self.filename, dtype = float)[:, :4]
 
     def gaussian(self, E, delta, x, y, x0, y0):
-        '''
-            二维高斯函数
-        '''
+        '''2-D Gaussian function.'''
+
         return E / (2 * np.pi * delta ** 2) * np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * delta ** 2))
 
     def put_stars(self, img, x0, y0, E, delta = 1.3, winvisible = False, winradius = 50):
-        '''
-            添加星点
-        '''
+        '''Place stars to the specified image.'''
+
         up = int(x0) - winradius if int(x0) - winradius >= 0 else 0
         down = int(x0) + winradius + 1 if int(x0) + winradius + 1 <= img.shape[0] else img.shape[0]
         left = int(y0) - winradius if int(y0) - winradius >= 0 else 0
@@ -234,29 +223,28 @@ class StarGenerator(object):
 
 
 if __name__ == "__main__":
-    # 初始化
+    # Initialization.
     G = StarGenerator('sao60')
     
-    # 随机生成初始位置
+    # Randomly generate the initialization position.
     pitch = np.random.randint(-90, 90)
     yaw = np.random.randint(0, 360)
     roll = 0
     
-    # 设置最终速度和加速度
+    # Set the acceleration and the final speed.
     pitchspd, yawspd, rollspd = 0, 5, 10
     pitchspd_acc, yawspd_acc, rollspd_acc = 0, 1, 2
     
-    # 开始生成连续多帧图像
+    # Generate.
     G.generateMulti(pitch, yaw, roll, pitchspd, yawspd, rollspd, pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 100, winvisible = False, noise = 3, frames = 120)
 
 
-    # # 绘图
     # plt.figure(figsize = (5, 5))
     # plt.subplot(111, facecolor = 'k')
     # plt.xlim([0, 2048])
     # plt.ylim([0, 2048])
-    # plt.xticks([])  #去掉横坐标值
-    # plt.yticks([])  #去掉纵坐标值
+    # plt.xticks([])
+    # plt.yticks([])
     # # plt.imsave('{}_{}_{}.png'.format(pitch, yaw, roll), img, cmap = 'gray')
     # plt.imshow(img[::-1], cmap = 'gray', vmin = 0, vmax = 150)
     # plt.show()

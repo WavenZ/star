@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 class StarGenerator(object):
     
     def __init__(self, filename, figsize = (2048, 2048)):
-        '''初始化'''
+        '''initialization'''
 
         self.filename = filename
         self.figsize = figsize
@@ -17,18 +17,18 @@ class StarGenerator(object):
 
 
     def generate(self, pitch, yaw, roll, starsize = 1.3, winvisible = False, winradius = 50):
-        '''生成星图
+        '''Generate star image.
         
-        参数:
-            pitch: 俯仰角（角度制，下同）
-            yaw: 偏航角
-            roll: 横滚角
-            starsize: 星点大小
-            winvisible: 星点高亮窗口
-            winradius: 高亮窗口半径
+        Args:
+            pitch:  
+            yaw: 
+            roll: 
+            starsize: star size.
+            winvisible: Star highlight window.
+            winradius: Highlight window radius.
         '''
 
-        # 空白图像
+        # Blank image.
         img = np.zeros((2048, 2048))
 
 
@@ -36,7 +36,7 @@ class StarGenerator(object):
         self.yaw = self.to_rad(yaw)
         self.roll = self.to_rad(roll)
         
-        # 三角运算
+        # Pre calculate.
         sina = np.sin(self.yaw - np.pi / 2)
         cosa = np.cos(self.yaw - np.pi / 2)
         sinb = np.sin(self.pitch + np.pi / 2)
@@ -44,7 +44,7 @@ class StarGenerator(object):
         sinc = np.sin(self.roll) 
         cosc = np.cos(self.roll)
         
-        # 视轴指向
+        # Optical axis direction.
         rx = np.cos(self.pitch) * np.cos(self.yaw)
         ry = np.cos(self.pitch) * np.sin(self.yaw)
         rz = np.sin(self.pitch)
@@ -54,49 +54,49 @@ class StarGenerator(object):
         Ry = np.array([[1, 0, 0], [0, cosb, -sinb], [0, sinb, cosb]])
         Rz = np.array([[cosc, -sinc, 0], [sinc, cosc, 0], [0, 0, 1]])
         R = (Rx.dot(Ry).dot(Rz)).T
-        # 转换为天球坐标系
+        # Convert to celestial sphere.
         X = np.array([np.cos(self.stars[:, 3]) * np.cos(self.stars[:, 2]),
                       np.cos(self.stars[:, 3]) * np.sin(self.stars[:, 2]),
                       np.sin(self.stars[:, 3])])
         
-        # 筛选出星敏正面的星点
+        # Screen out the front stars.
         num = self.stars.shape[0]
         starID = np.linspace(0, num, num, endpoint = False)
         starID = starID[np.where(np.inner(X.T, [rx, ry, rz]) > 0)]
         X = X.T[np.where(np.inner(X.T, [rx, ry, rz]) > 0)].T
         
-        # 将星点投影到图像平面 
+        # Project the star to the image plane.
         x = self.K.dot(R).dot(X).reshape(3, -1)
         y = np.array([(x[1] / x[2]).astype(int), (x[0] / x[2]).astype(int)])
         
-        # 筛选出落在视场内的星点
+        # Select the stars in the field of view.
         starID = starID[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))]
         y = y.T[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))].T
         
 
         
-        # 在星图中绘制星点
+        # Place stars in image.
         for i in range(y.shape[1]):
             self.put_stars(img, y[0, i], y[1, i], 10000 / pow(2.51, self.stars[int(starID[i]), 1] - 2), 
                            starsize, winvisible, winradius)
         
-        # 添加噪声
+        # Add noise.
         self.add_noise(img, 3)
         
-        # 灰度截取
+        # Grayscale interception.
         img[np.where(img > 255)] = 255
         img[np.where(img < 0)] = 0
         
         return img, y.shape[1]
 
     def add_noise(self, img, sigma):
-        '''添加噪声
+        '''Add some noise to the image.
         
-        添加高斯噪声
+        Add some Gaussian noise to the image.
 
-        参数:
-            img: 图像
-            sigma: 噪声增益，即标准高斯噪声的倍数
+        Args:
+            img: Image.
+            sigma: Gain of noise.
         '''
 
         h, w = img.shape
@@ -104,31 +104,29 @@ class StarGenerator(object):
         img += noise
 
     def to_rad(self, angle):
-        '''角度转弧度'''
+        '''Angle to radian'''
 
         return angle / 180 * np.pi
     
     def parse_catalogue(self):
-        '''读星库'''
+        '''Parse the specified catalogue.'''
 
         return np.loadtxt(self.filename, dtype = float)[:, :4]
 
     def gaussian(self, E, delta, x, y, x0, y0):
-        '''二维高斯函数'''
+        '''2-D Gaussian function.'''
 
         return E / (2 * np.pi * delta ** 2) * np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * delta ** 2))
 
     def put_stars(self, img, x0, y0, E, delta = 1.3, winvisible = False, winradius = 50):
-        '''添加星点
+        '''Place stars to the specified image.
 
-        在图像中指定位置添加星点
-
-        参数:
-            img: 图像
-            x0, y0: 坐标位置
-            E: 能量强度
-            winvisible: 星点高亮窗口
-            winradius: 高亮窗口半径
+        Args:
+            img: Image.
+            x0, y0: Coordinates of the star to be placed.
+            E: Energy indensity.
+            winvisible: Star highlight window.
+            winradius: Radius of highlight window.
         '''
         up = x0 - winradius if x0 - winradius >= 0 else 0
         down = x0 + winradius + 1 if x0 + winradius + 1 <= img.shape[0] else img.shape[0]
@@ -158,8 +156,8 @@ if __name__ == "__main__":
     plt.subplot(111, facecolor = 'k')
     plt.xlim([0, 2048])
     plt.ylim([0, 2048])
-    plt.xticks([])  #去掉横坐标值
-    plt.yticks([])  #去掉纵坐标值
+    plt.xticks([])
+    plt.yticks([])
     plt.imsave('{}_{}_{}.png'.format(pitch, yaw, roll), img, cmap = 'gray')
     plt.imshow(img[::-1], cmap = 'gray', vmin = 0, vmax = 150)
     plt.show()
