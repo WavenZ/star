@@ -7,6 +7,7 @@ class StarGenerator(object):
 
     def __init__(self, filename, figsize = (2048, 2048)):
         '''Initialization.'''
+
         self.filename = filename
         self.figsize = figsize
         self.stars = self.parse_catalogue()
@@ -32,6 +33,7 @@ class StarGenerator(object):
 
     def generate(self, pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure = 100, starsize = 1.3, winvisible = False, winradius = 50, noise = 3):
         '''Generate star image.'''
+        
         img = np.zeros(self.figsize)
 
 
