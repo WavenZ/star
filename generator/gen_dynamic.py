@@ -31,7 +31,8 @@ class StarGenerator(object):
 
         return R
 
-    def generate(self, pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure = 100, starsize = 1.3, winvisible = False, winradius = 50, noise = 3):
+    def generate(self, pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure = 100, 
+                 starsize = 1.3, winvisible = False, winradius = 50, noise = 3):
         '''Generate star image.'''
 
         img = np.zeros(self.figsize)
@@ -94,11 +95,12 @@ class StarGenerator(object):
         img[np.where(img > 255)] = 255
         img[np.where(img < 0)] = 0
         self.add_noise(img, noise)
+
         # Grayscale inerception.
         img[np.where(img > 255)] = 255
         img[np.where(img < 0)] = 0
         return img, y.shape[1]
-        
+
     def generateMulti(self, pitch, yaw, roll, pitchspd_max, yawspd_max, rollspd_max, 
                         pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 100, 
                         starsize = 1.3, winvisible = False, winradius = 50, noise = 3, frames = 10):
@@ -134,7 +136,7 @@ class StarGenerator(object):
             img = np.zeros(self.figsize)
 
             # The simulation granularity is 1ms
-            for j in range(exposure):
+            for _ in range(exposure):
 
                 # Update the angular velocity.
                 if pitchspd < pitchspd_max:

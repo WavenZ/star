@@ -8,7 +8,7 @@ import os
 from cv2 import cv2
 
 def get_mse(real, predict):
-    """均方误差 估计值与真值 偏差"""
+    """Mean square error."""
 
     return sum([(pred - real) ** 2 for pred in predict]) / len(predict)
 
@@ -16,7 +16,7 @@ def get_mse(real, predict):
 if __name__ == "__main__":
 
     # file_path = r'./graph/dynamic/5dps/100ms/30/'
-    file_path = r'./graph/'
+    file_path = r'../graph/dynamic/variable_dps/2dps'
     images = os.listdir(file_path)
     directions = []
     for image in images:
@@ -30,14 +30,14 @@ if __name__ == "__main__":
     print('[Min] ', np.min(directions))
     print('[Max] ', np.max(directions))
     print('[Avg] ', np.mean(directions))  
-    print('[Mse] ', get_mse(45, directions))
+    print('[Mse] ', get_mse(60, directions))
 
     plot = False
     if plot:
         x = np.linspace(0, len(images), len(images), endpoint=False)
         plt.figure()
         plt.ylim((-1, 1))
-        plt.scatter(x, np.array(directions) - 45)
+        plt.scatter(x, np.array(directions) - 60)
         plt.show()
 
     # G = gd.StarGenerator('sao60')

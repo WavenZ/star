@@ -3,9 +3,8 @@ import cv2
 import angest.est as ae
 
 def get_mse(real, records_predict):
-    """
-    均方误差 估计值与真值 偏差
-    """
+    """Mean square error."""
+    
     return sum([(x - real) ** 2 for x in records_predict]) / len(records_predict)
 
 data = np.load('save20noise.npy')
