@@ -143,8 +143,9 @@ def mean_value2(values, limit):
     # Sort first.
     values = np.sort(values)
     std = np.std(values)
+
     # Iterative calculation.
-    while len(values) >= max(2, 0.7 * n) or std > limit:
+    while len(values) >= max(2, 0.8 * n) or std > limit:
         stda = np.std(values[1:])
         stdb = np.std(values[: -1])
         if stda < stdb:
@@ -153,7 +154,6 @@ def mean_value2(values, limit):
         else:
             std = stdb
             values = values[: -1]
-
     return np.mean(values)
 
 def Direction_estimate(image):
@@ -176,7 +176,7 @@ def Direction_estimate(image):
                 continue
             
             # Threshoulding.
-            thImg = threshold(window, 6) 
+            thImg = threshold(window, 4) 
             
             # Get the coordinates of positive points.
             points = np.array(np.where(thImg == 255)) 
@@ -190,14 +190,17 @@ def Direction_estimate(image):
             # Filter out the noise and seperate different star in the window.
             groups = Cluster(coordins) 
 
-            # plt.figure()
-            # plt.imshow(thImg, cmap = 'gray')
-            # plt.show()
+
             for group in groups:
                 theta = pca(group, winsize * j, image.shape[0] - winsize * (i + 1))
                 # (0, 0) indicates that there are no stars in the window.
                 if theta != (0, 0):
                     Theta.append(theta[0])
+            #     print(np.arctan(theta[0]) * 180 / np.pi)
+            # plt.figure()
+            # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
+            # plt.show()
+            # print()
 
     # print(np.arctan(np.array(Theta)) * 180 / np.pi)
     
@@ -205,6 +208,8 @@ def Direction_estimate(image):
     for i in range(len(Theta)):
         if Theta[i] == float('inf'):
             Theta[i] = -99999
+
+
 
     # Return if Theta is null.
     if len(Theta) == 0: 
