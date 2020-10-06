@@ -55,7 +55,7 @@ def pca(points, xref, yref):
     # The first principal component is greater than the limit.
     if pca.explained_variance_ratio_[0] > limit: 
         # print(pca.explained_variance_ratio_[0])
-        return k, b
+        return k, pca.explained_variance_ratio_[0]
     return 0, 0 # Directly identified as a fake star.
 
 def threshold(img, n):
@@ -164,25 +164,42 @@ def Direction_estimate(image):
     rowsize, colsize = image.shape
     
     # Result.
-    Theta = list([])
+    Theta, Linear = list([]), list([])
 
     for i in range(rowsize // winsize):
         for j in range(colsize // winsize):
             # A window of star image.
-            window = image[i * winsize : (i + 1) * winsize, j * winsize : (j + 1) * winsize] 
+            window = image[i * winsize : (i + 1) * winsize, j * winsize : (j + 1) * winsize]
+
             mean = np.mean(window)
             # Skip while it's too bright.
             if mean > 180: 
                 continue
             
             # Threshoulding.
-            thImg = threshold(window, 4) 
+            thImg = threshold(window, 6) 
             
             # Get the coordinates of positive points.
-            points = np.array(np.where(thImg == 255)) 
+            points = np.array(np.where(thImg == 255))
+
             # Skip while the distribution is too scattered.
             if np.std(points[0]) + np.std(points[1]) > 50: 
                 continue
+
+            # Adjust the window so that the stars are in the middle of the window.
+            dx, dy = np.mean(points, 1).astype(np.int32) - 50
+            if i * winsize + dx < 0 or (i + 1) * winsize + dx >= 2048:
+                dx = 0
+            if j * winsize + dy < 0 or (j + 1) * winsize + dy >= 2048:
+                dy = 0
+            if dx or dy:
+                window = image[i * winsize + dx: (i + 1) * winsize + dx,
+                            j * winsize + dy: (j + 1) * winsize + dy]
+                # Threshoulding.
+                thImg = threshold(window, 4) 
+                
+                # Get the coordinates of positive points.
+                points = np.array(np.where(thImg == 255))
 
             # Coordinate transformation.
             coordins = np.vstack((points[1], winsize - 1 - points[0])) 
@@ -192,15 +209,23 @@ def Direction_estimate(image):
 
 
             for group in groups:
-                theta = pca(group, winsize * j, image.shape[0] - winsize * (i + 1))
+                theta, linear = pca(group, winsize * j, image.shape[0] - winsize * (i + 1))
                 # (0, 0) indicates that there are no stars in the window.
-                if theta != (0, 0):
-                    Theta.append(theta[0])
-            #     print(np.arctan(theta[0]) * 180 / np.pi)
-            # plt.figure()
-            # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
-            # plt.show()
-            # print()
+                if theta != 0:
+                    Theta.append(theta)
+                    Linear.append(linear)
+                # print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
+                # plt.figure()
+                # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
+                # plt.show()
+
+    # print(Theta, Linear)
+    temp = np.vstack((Theta, Linear)).T
+    temp = np.array(sorted(temp, key=lambda x: x[1]))
+    # print(temp.shape)
+    # print(np.arctan(temp) * 180 / np.pi)
+
+    Theta = temp[len(Theta) // 3: , 0]
 
     # print(np.arctan(np.array(Theta)) * 180 / np.pi)
     
@@ -208,7 +233,6 @@ def Direction_estimate(image):
     for i in range(len(Theta)):
         if Theta[i] == float('inf'):
             Theta[i] = -99999
-
 
 
     # Return if Theta is null.

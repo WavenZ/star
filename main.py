@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
     # file_path = r'./graph/dynamic/5dps/100ms/30/'
     # file_path = r'../graph/dynamic/variable_dps/6dps'
-    # file_path = r'../graph/dynamic/fix0'
-    file_path = r'./graph/'
+    file_path = r'../graph/dynamic/fix60'
+    # file_path = r'./graph/'
     images = os.listdir(file_path)
     directions = []
     for image in images:
@@ -32,14 +32,14 @@ if __name__ == "__main__":
     print('[Min] ', np.min(directions))
     print('[Max] ', np.max(directions))
     print('[Avg] ', np.mean(directions))
-    print('[Mse] ', get_mse(60, directions))
+    print('[Mse] ', get_mse(30, directions))
 
     plot = False
     if plot:
         x = np.linspace(0, len(images), len(images), endpoint=False)
         plt.figure()
         plt.ylim((-1, 1))
-        plt.scatter(x, np.array(directions) - 60)
+        plt.scatter(x, np.array(directions) - 30)
         plt.show()
 
     # G = gd.StarGenerator('sao60')
