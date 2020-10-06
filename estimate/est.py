@@ -11,6 +11,9 @@ from sklearn.decomposition import PCA
 
 import os
 
+from warnings import simplefilter
+simplefilter(action='ignore', category=FutureWarning)
+
 def pca(points, xref, yref):
     '''incipal component analysis (PCA) is used to estimate 
     the motion direction of star points.
@@ -165,6 +168,7 @@ def Direction_estimate(image):
     
     # Result.
     Theta, Linear = list([]), list([])
+    show = np.zeros_like(image)
 
     for i in range(rowsize // winsize):
         for j in range(colsize // winsize):
@@ -214,10 +218,18 @@ def Direction_estimate(image):
                 if theta != 0:
                     Theta.append(theta)
                     Linear.append(linear)
+                    # print(points)
+                    # print(list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T))
+                    show[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
+                    # image[list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T)] = 255
                 # print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
                 # plt.figure()
                 # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
                 # plt.show()
+    plt.figure()
+    plt.imshow(np.hstack((image, show)), cmap = 'gray')
+    plt.show()
+
 
     # print(Theta, Linear)
     temp = np.vstack((Theta, Linear)).T

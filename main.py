@@ -17,8 +17,8 @@ if __name__ == "__main__":
 
     # file_path = r'./graph/dynamic/5dps/100ms/30/'
     # file_path = r'../graph/dynamic/variable_dps/6dps'
-    file_path = r'../graph/dynamic/fix60'
-    # file_path = r'./graph/'
+    # file_path = r'../graph/dynamic/fix60'
+    file_path = r'./graph/'
     images = os.listdir(file_path)
     directions = []
     for image in images:
