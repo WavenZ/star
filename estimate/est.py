@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 # import pandas as pd
 
 from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 from cv2 import cv2
 from scipy.stats import entropy
 from sklearn.cluster import DBSCAN
@@ -32,15 +34,19 @@ def pca(points, xref, yref):
     # PCA
     pca = PCA()
     pca.fit(data)
-    if pca.components_[0, 0]:   # Avoid division by zero error.
-        k = pca.components_[0, 1] / pca.components_[0, 0]
+    if pca.components_[0, 1]:   # Avoid division by zero error.
+        k = - pca.components_[0, 0] / pca.components_[0, 1]
     else:
         k = 999999
     if k * (xref + np.mean(points[0])):     # Avoid division by zero error.
-        b = np.mean(yref + points[1]) + 1 / k * (xref + np.mean(points[0]))
+        # b = np.mean(yref + points[1]) + 1 / k * (xref + np.mean(points[0]))
+        b = yref + np.mean(points[1]) - k * (xref + np.mean(points[0]))
     else:
         b = 999999
     
+    # print('center =', yref + np.mean(points[0]), xref + np.mean(points[1]))
+    # print('k =', k, 'b =', b)
+
     # dx and dy are the x and y ranges，respectively.
     # Used to set the limit of the first principal component（lower limit）.
     dx = np.max(data[:, 0]) - np.min(data[:, 0])
@@ -58,8 +64,8 @@ def pca(points, xref, yref):
     # The first principal component is greater than the limit.
     if pca.explained_variance_ratio_[0] > limit: 
         # print(pca.explained_variance_ratio_[0])
-        return k, pca.explained_variance_ratio_[0]
-    return 0, 0 # Directly identified as a fake star.
+        return k, b, pca.explained_variance_ratio_[0]
+    return 0, 0, 0 # Directly identified as a fake star.
 
 def threshold(img, n):
     """Thresholding.
@@ -75,11 +81,12 @@ def threshold(img, n):
         Image after thresholding.
     """
     hist = cv2.calcHist([img],[0],None,[256],[0,256])
-    th = 0
+    th, cnt = 0, 0
     for k in range(256):
         if hist[255 - k] != 0:
             n = n - 1
-            if(n == 0):
+            cnt += hist[255 - k]
+            if n <= 0 and cnt > 20 :
                 th = 255 - k - 1
                 break
     # print(th)
@@ -159,6 +166,16 @@ def mean_value2(values, limit):
             values = values[: -1]
     return np.mean(values)
 
+def isVisited(Vis, x, y):
+    '''Figure out whether the current window is visited.'''
+    for v in Vis:
+        dis = np.abs(x - v[0]) + np.abs(y - v[1])
+        if dis < 30:
+            Vis.append([x, y])
+            return True
+    Vis.append([x, y])
+    return False
+
 def Direction_estimate(image):
     '''Estimate the direction of a single image.'''
     
@@ -167,14 +184,17 @@ def Direction_estimate(image):
     rowsize, colsize = image.shape
     
     # Result.
-    Theta, Linear = list([]), list([])
-    show = np.zeros_like(image)
+    Theta, Intercept, Linear, Window = list([]), list([]), list([]), list([])
+    show = Image.fromarray(image)
+    font = ImageFont.truetype('C:\\Windows\\Fonts\\SIMYOU.TTF', 32)
+    anno = ImageDraw.Draw(show)
 
+    Vis = []
+    x, y = 0, 0
     for i in range(rowsize // winsize):
         for j in range(colsize // winsize):
             # A window of star image.
             window = image[i * winsize : (i + 1) * winsize, j * winsize : (j + 1) * winsize]
-
             mean = np.mean(window)
             # Skip while it's too bright.
             if mean > 180: 
@@ -200,10 +220,15 @@ def Direction_estimate(image):
                 window = image[i * winsize + dx: (i + 1) * winsize + dx,
                             j * winsize + dy: (j + 1) * winsize + dy]
                 # Threshoulding.
-                thImg = threshold(window, 4) 
+                thImg = threshold(window, 6) 
                 
                 # Get the coordinates of positive points.
                 points = np.array(np.where(thImg == 255))
+
+            # Skip visited window
+            x, y = np.mean(points, 1).astype(np.int32) + [i * winsize + dx, j * winsize + dy]
+            if isVisited(Vis, x, y):
+                continue
 
             # Coordinate transformation.
             coordins = np.vstack((points[1], winsize - 1 - points[0])) 
@@ -211,24 +236,98 @@ def Direction_estimate(image):
             # Filter out the noise and seperate different star in the window.
             groups = Cluster(coordins) 
 
-
             for group in groups:
-                theta, linear = pca(group, winsize * j, image.shape[0] - winsize * (i + 1))
+                theta, intercept, linear = pca(group, winsize * j + dy, image.shape[0] - winsize * (i + 1) - dx)
                 # (0, 0) indicates that there are no stars in the window.
                 if theta != 0:
                     Theta.append(theta)
+                    Intercept.append(intercept)
                     Linear.append(linear)
-                    # print(points)
+                    Window.append(window)
+                    anno.line((y + 5, x + 5, j * winsize + dy + 70,  i * winsize + dx + 70), fill = 255, width = 1)
+                    anno.text((j * winsize + dy + 70, i * winsize + dx + 70), '{:.4f}'.format(linear), font = font, fill = 'white')
+                    # print(points)C:\\Windows\\Fonts\\SIMYOU.TTF
                     # print(list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T))
-                    show[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
+                    # show[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
                     # image[list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T)] = 255
                 # print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
-                # plt.figure()
-                # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
-                # plt.show()
-    plt.figure()
-    plt.imshow(np.hstack((image, show)), cmap = 'gray')
-    plt.show()
+            # plt.figure()
+            # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
+            # plt.show()
+    # plt.figure()
+    # plt.imshow(image, cmap = 'gray')
+    # plt.show()
+
+
+
+
+    Theta = np.vstack((Theta, Intercept, Linear)).T
+    # print(Theta)
+
+    Theta = np.array(sorted(Theta, key=lambda x: x[2]))
+    # print(Theta)
+    Linear = Theta[:, 2]
+    Intercept = Theta[:, 1]
+    Theta = Theta[:, 0]
+    # print(len(Theta))
+    num = len(Theta) // 3
+
+    Theta = Theta[num: ]
+    Intercept = Intercept[num: ]
+    Linear = Linear[num: ]
+
+    Res = []
+    for i in range(len(Theta)):
+        for j in range(i + 1, len(Theta)):
+            k1, k2 = Theta[i], Theta[j]
+            b1, b2 = Intercept[i], Intercept[j]
+            x = (b2 - b1) / (k1 - k2)
+            y = k1 * x + b1
+            # print(k1, b1, k2, b2, x, y)
+            Res.append([x, y])
+
+    # print(np.array(Res))
+    Res = np.array(sorted(Res, key=lambda x: x[0]))
+    # print(Res[:, 1] / Res[:, 0])
+
+
+    S = np.mean(np.array(Res), 0)
+    pos = Res[np.where(Res[:, 0] > 0)]
+    neg = Res[np.where(Res[:, 0] <= 0)]
+    # print(np.mean(pos, 0))
+    if pos.shape[0] >= neg.shape[0]:
+        S = np.mean(pos, 0)
+    else:
+        S = np.mean(neg, 0)
+    # print(np.mean(pos, 0))
+    # print(np.mean(neg, 0))
+
+    print(S)
+    # The least squares solution of overdetermined equations: AX = b
+    # X = (AᵀA)⁻¹Aᵀb
+    # For y = kx + b => kx - y = -b
+    # A = [[k₁, -1], ..., [kᵢ, -1], ...]
+    # b = [-b, ..., -b]
+    # A = - np.ones((len(Theta), 2))
+    # A[:, 0] = np.array(Theta)
+    # b = - np.array(Intercept)
+    # S = np.linalg.inv(np.dot(A.T, A)).dot(A.T).dot(b)
+    # print(S)
+    anno.ellipse((S[0] - 5, (image.shape[0] - S[1]) - 5, S[0] + 5, (image.shape[0] - S[1]) + 5), fill = 'white')
+    # show.show()
+
+    return np.mean(np.array(Res), 0)[0]
+
+
+
+
+
+
+
+
+
+
+
 
 
     # print(Theta, Linear)

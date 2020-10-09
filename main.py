@@ -20,12 +20,14 @@ if __name__ == "__main__":
     # file_path = r'../graph/dynamic/fix60'
     file_path = r'./graph/'
     images = os.listdir(file_path)
+    print(images)
     directions = []
     for image in images:
         src = cv2.imread(file_path + '\\' + image, 0)
+        # print(src.shape)
         src = cv2.blur(src, (3, 3))
         direction = ae.Direction_estimate(src)
-        print(image, direction)
+        # print(image, direction)
         directions.append(direction)
     # print('Res: ', np.array(directions))
     print()

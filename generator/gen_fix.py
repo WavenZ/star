@@ -75,7 +75,7 @@ class StarGenerator(object):
             y = y.T[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))].T
             # Place stars in image.
             for i in range(y.shape[1]):
-                self.put_stars(img, y[0, i], y[1, i], 5000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
+                self.put_stars(img, y[0, i], y[1, i], 3000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
                             starsize, winvisible, winradius)
 
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     G = StarGenerator('sao60')
     
     # Set the speed.
-    hspd, vspd = 0.4, 0
+    hspd, vspd = 0.1, 0.1
     
     # Generate.
     for i in range(100):
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         t2 = time.time()
         im = Image.fromarray(image)
         im = im.convert('L')
-        im.save('../graph/dynamic/fix0/{}.png'.format(i))
+        im.save('../graph/dynamic/fix/{}.png'.format(i))
         # plt.show()    
         t3 = time.time()
         print(t2 - t1, t3 - t2)
