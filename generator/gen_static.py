@@ -1,5 +1,7 @@
 import random
 from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -16,7 +18,7 @@ class StarGenerator(object):
                            [0, 0, 1]])
 
 
-    def generate(self, pitch, yaw, roll, starsize = 1.3, winvisible = False, winradius = 50):
+    def generate(self, pitch, yaw, roll, starsize = 1.3, winvisible = False, winradius = 50, magvisible = False):
         '''Generate star image.
         
         Args:
@@ -54,6 +56,7 @@ class StarGenerator(object):
         Ry = np.array([[1, 0, 0], [0, cosb, -sinb], [0, sinb, cosb]])
         Rz = np.array([[cosc, -sinc, 0], [sinc, cosc, 0], [0, 0, 1]])
         R = (Rx.dot(Ry).dot(Rz)).T
+        
         # Convert to celestial sphere.
         X = np.array([np.cos(self.stars[:, 3]) * np.cos(self.stars[:, 2]),
                       np.cos(self.stars[:, 3]) * np.sin(self.stars[:, 2]),
@@ -67,22 +70,31 @@ class StarGenerator(object):
         
         # Project the star to the image plane.
         x = self.K.dot(R).dot(X).reshape(3, -1)
-        y = np.array([(x[1] / x[2]).astype(int), (x[0] / x[2]).astype(int)])
+        # y = np.array([(x[1] / x[2]).astype(int), (x[0] / x[2]).astype(int)])
+        y = np.array([(x[1] / x[2]), x[0] / x[2]])
         
         # Select the stars in the field of view.
         starID = starID[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))]
         y = y.T[np.where((y[0] >= 0) & (y[0] < 2048) & (y[1] >= 0) & (y[1] < 2048))].T
         
-
-        
         # Place stars in image.
         for i in range(y.shape[1]):
-            self.put_stars(img, y[0, i], y[1, i], 10000 / pow(2.51, self.stars[int(starID[i]), 1] - 2), 
+            self.put_stars(img, y[0, i], y[1, i], 30000 / pow(2.51, self.stars[int(starID[i]), 1] - 2), 
                            starsize, winvisible, winradius)
-        
+
         # Add noise.
         self.add_noise(img, 3)
         
+        if magvisible:
+            img = Image.fromarray(img)
+            font = ImageFont.truetype('C:\\Windows\\Fonts\\SIMYOU.TTF', 32)
+            anno = ImageDraw.Draw(img)
+            for i in range(y.shape[1]):
+                anno.text((y[1, i], y[0, i]), '{:.2f}'.format(self.stars[int(starID[i]), 1]), font = font, fill = 'white')
+            
+            img = np.array(img)
+
+
         # Grayscale interception.
         img[np.where(img > 255)] = 255
         img[np.where(img < 0)] = 0
@@ -100,7 +112,7 @@ class StarGenerator(object):
         '''
 
         h, w = img.shape
-        noise = np.random.randn(h, w) * sigma
+        noise = np.random.randn(h, w) * sigma + 10
         img += noise
 
     def to_rad(self, angle):
@@ -128,10 +140,10 @@ class StarGenerator(object):
             winvisible: Star highlight window.
             winradius: Radius of highlight window.
         '''
-        up = x0 - winradius if x0 - winradius >= 0 else 0
-        down = x0 + winradius + 1 if x0 + winradius + 1 <= img.shape[0] else img.shape[0]
-        left = y0 - winradius if y0 - winradius >= 0 else 0
-        right = y0 + winradius + 1 if y0 + winradius + 1 <= img.shape[1] else img.shape[1]
+        up = int(x0) - winradius if int(x0) - winradius >= 0 else 0
+        down = int(x0) + winradius + 1 if int(x0) + winradius + 1 <= img.shape[0] else img.shape[0]
+        left = int(y0) - winradius if int(y0) - winradius >= 0 else 0
+        right = int(y0) + winradius + 1 if int(y0) + winradius + 1 <= img.shape[1] else img.shape[1]
         x = np.linspace(up, down - 1, down - up)
         y = np.linspace(left, right - 1, right - left)
         X, Y = np.meshgrid(x, y)
@@ -145,8 +157,12 @@ class StarGenerator(object):
 if __name__ == "__main__":
 
     G = StarGenerator('sao60')
-    pitch, yaw, roll = 0, 0, 0
-    img, starnum = G.generate(pitch, yaw, roll, winvisible = False)
+    # pitch, yaw, roll = 0, 0, 0
+    pitch = np.random.randint(-90, 90)
+    yaw = np.random.randint(0, 360)
+    roll = 0
+
+    img, starnum = G.generate(pitch, yaw, roll, magvisible=True)
     print('Image size: {}'.format(img.shape))
     print('Total stars: {}'.format(starnum))
     print('Pitch: {}, Yaw: {}, Roll: {}'.format(pitch, yaw, roll))
@@ -158,6 +174,6 @@ if __name__ == "__main__":
     plt.ylim([0, 2048])
     plt.xticks([])
     plt.yticks([])
-    plt.imsave('{}_{}_{}.png'.format(pitch, yaw, roll), img, cmap = 'gray')
-    plt.imshow(img[::-1], cmap = 'gray', vmin = 0, vmax = 150)
+    # plt.imsave('{}_{}_{}.png'.format(pitch, yaw, roll), img, cmap = 'gray')
+    plt.imshow(img[::-1], cmap = 'gray', vmin = 0, vmax = 255)
     plt.show()

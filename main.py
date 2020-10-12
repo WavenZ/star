@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import estimate.est as ae
+import extract.extract as ex
 import generator.gen_dynamic as gd
 import cv2
 import os
@@ -20,29 +21,32 @@ if __name__ == "__main__":
     # file_path = r'../graph/dynamic/fix60'
     file_path = r'./graph/'
     images = os.listdir(file_path)
-    print(images)
+    # print(images)
     directions = []
     for image in images:
+        print(image)
         src = cv2.imread(file_path + '\\' + image, 0)
         # print(src.shape)
         src = cv2.blur(src, (3, 3))
-        direction = ae.Direction_estimate(src)
+        theta = ae.Direction_estimate(src)
+        ret, retImg = ex.extract(src, theta)
+        plt.imsave('./graph/{}_extract.png'.format(image), np.hstack((src, retImg)), cmap = 'gray', vmin = 0, vmax = 255)
         # print(image, direction)
-        directions.append(direction)
+        # directions.append(direction)
     # print('Res: ', np.array(directions))
-    print()
-    print('[Min] ', np.min(directions))
-    print('[Max] ', np.max(directions))
-    print('[Avg] ', np.mean(directions))
-    print('[Mse] ', get_mse(30, directions))
+    # print()
+    # print('[Min] ', np.min(directions))
+    # print('[Max] ', np.max(directions))
+    # print('[Avg] ', np.mean(directions))
+    # print('[Mse] ', get_mse(30, directions))
 
-    plot = False
-    if plot:
-        x = np.linspace(0, len(images), len(images), endpoint=False)
-        plt.figure()
-        plt.ylim((-1, 1))
-        plt.scatter(x, np.array(directions) - 30)
-        plt.show()
+    # plot = False
+    # if plot:
+    #     x = np.linspace(0, len(images), len(images), endpoint=False)
+    #     plt.figure()
+    #     plt.ylim((-1, 1))
+    #     plt.scatter(x, np.array(directions) - 30)
+    #     plt.show()
 
     # G = gd.StarGenerator('sao60')
     # pitch, yaw, roll = 10, 30, 60

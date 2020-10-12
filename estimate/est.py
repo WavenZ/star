@@ -58,10 +58,11 @@ def pca(points, xref, yref):
     # range of [0.9 - 0.99]
     # The shorter the star is, the smaller the requirement for 
     # the size of the first principal component is.
-    limit = 0.9 + 0.003 * (dx + dy)
-    if limit > 0.99:
-        limit = 0.99
+    limit = 0.9 + 0.002 * (dx + dy)
+    if limit > 0.995:
+        limit = 0.995
     # The first principal component is greater than the limit.
+    # print(pca.explained_variance_ratio_[0], limit)
     if pca.explained_variance_ratio_[0] > limit: 
         # print(pca.explained_variance_ratio_[0])
         return k, b, pca.explained_variance_ratio_[0]
@@ -196,12 +197,13 @@ def Direction_estimate(image):
             # A window of star image.
             window = image[i * winsize : (i + 1) * winsize, j * winsize : (j + 1) * winsize]
             mean = np.mean(window)
+
             # Skip while it's too bright.
-            if mean > 180: 
+            if mean > 180:  
                 continue
             
             # Threshoulding.
-            thImg = threshold(window, 6) 
+            thImg = threshold(window, 5) 
             
             # Get the coordinates of positive points.
             points = np.array(np.where(thImg == 255))
@@ -220,7 +222,7 @@ def Direction_estimate(image):
                 window = image[i * winsize + dx: (i + 1) * winsize + dx,
                             j * winsize + dy: (j + 1) * winsize + dy]
                 # Threshoulding.
-                thImg = threshold(window, 6) 
+                thImg = threshold(window, 5) 
                 
                 # Get the coordinates of positive points.
                 points = np.array(np.where(thImg == 255))
@@ -250,7 +252,7 @@ def Direction_estimate(image):
                     # print(list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T))
                     # show[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
                     # image[list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T)] = 255
-                # print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
+            #     print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
             # plt.figure()
             # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
             # plt.show()
@@ -258,7 +260,8 @@ def Direction_estimate(image):
     # plt.imshow(image, cmap = 'gray')
     # plt.show()
 
-
+    if len(Theta) == 0:
+        return [99999, 99999]
 
 
     Theta = np.vstack((Theta, Intercept, Linear)).T
@@ -270,30 +273,37 @@ def Direction_estimate(image):
     Intercept = Theta[:, 1]
     Theta = Theta[:, 0]
     # print(len(Theta))
-    num = len(Theta) // 3
+    num = len(Theta) // 1000
 
     Theta = Theta[num: ]
     Intercept = Intercept[num: ]
     Linear = Linear[num: ]
+    # print(Theta)
 
     Res = []
     for i in range(len(Theta)):
         for j in range(i + 1, len(Theta)):
             k1, k2 = Theta[i], Theta[j]
             b1, b2 = Intercept[i], Intercept[j]
+            if k1 == k2:
+                continue
             x = (b2 - b1) / (k1 - k2)
             y = k1 * x + b1
             # print(k1, b1, k2, b2, x, y)
-            Res.append([x, y])
+            Res.append([x, y, abs(b1 - b2)])
 
     # print(np.array(Res))
-    Res = np.array(sorted(Res, key=lambda x: x[0]))
+    Res = np.array(sorted(Res, key=lambda x: x[2]))
     # print(Res[:, 1] / Res[:, 0])
 
-
+    # print(Res)
     S = np.mean(np.array(Res), 0)
     pos = Res[np.where(Res[:, 0] > 0)]
+    pos = np.array(sorted(pos, key=lambda x: x[2]))[len(pos) // 3:]
     neg = Res[np.where(Res[:, 0] <= 0)]
+    neg = np.array(sorted(neg, key=lambda x: x[2]))[len(neg) // 3:]
+    # print(pos)
+    # print(neg)
     # print(np.mean(pos, 0))
     if pos.shape[0] >= neg.shape[0]:
         S = np.mean(pos, 0)
@@ -316,7 +326,7 @@ def Direction_estimate(image):
     anno.ellipse((S[0] - 5, (image.shape[0] - S[1]) - 5, S[0] + 5, (image.shape[0] - S[1]) + 5), fill = 'white')
     # show.show()
 
-    return np.mean(np.array(Res), 0)[0]
+    return S[: 2]
 
 
 
@@ -371,29 +381,7 @@ def imshow(*images):
         plt.imshow(image, cmap='gray')
     plt.show()
 
-def Kernel(size, width, theta):
-    """Construct the convolution kernel.
-        
-    Args: size：size of kernel, (Height, Width)
-          width：Width of the positive region.
-          theta：Rotation angle.
-    
-    Notes：
-        (size - width) shoule be even, so that the converlution kernel is symmetric.
-    """
 
-    temp = np.zeros((size + 10,size + 10))
-    temp [(size - width) // 2 + 5:(size - width) // 2 + 5 + width,:] = 1
-    temp = Image.fromarray(temp)
-    temp = temp.rotate(theta)
-    temp = np.array(temp)
-    kernel = temp[5:-5, 5:-5]
-    cnt = np.sum(kernel)
-    for i in range(size):
-        for j in range(size):
-            kernel[i, j] = cnt / (cnt - size * size) if kernel[i, j] == 0 else kernel[i, j]
-    kernel = kernel / 4
-    return kernel
 
 
 if __name__ == '__main__':
@@ -406,5 +394,5 @@ if __name__ == '__main__':
         src = cv2.imread(file_path + '\\' + image, 0)
         blured = cv2.blur(src, (3, 3))
         # blured = src
-        direction =  Direction_estimate(blured)
-        print(direction)
+        center =  Direction_estimate(blured)
+        print(center)
