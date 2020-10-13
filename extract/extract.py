@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -19,6 +20,7 @@ def conv(src, center):
     # center[1] = src.shape[0] - center[1]
     conv_init()
     ret = np.zeros_like(src)
+    start = time.time()
     for row in range(6 , (src.shape[0] - 5)):
         for col in range(6 , (src.shape[1] - 5)):
             row = src.shape[0] - row - 1
@@ -28,6 +30,8 @@ def conv(src, center):
             # print((np.arctan((row - center[0])/(col - center[1])) * 180 / np.pi))
             # return ret
             # print(kernel, src[row - 5:row + 6, col - 5:col + 6], ret[row, col])
+    end = time.time()
+    print(end - start)
     return ret
 
 def get_kernel(size, width, theta):
@@ -99,6 +103,15 @@ def enhance(image, center):
         ret = conv(image, center)
 
     return ret
+
+def img2txt(image):
+    with open('img.txt', 'w') as f:
+        for row in image:
+            s = ''
+            for pixel in row:
+                s += chr(pixel)
+            s += '\n'
+            f.write(s)
 
 def connectedComponents(image):
     ans, temp = list([]), list([])

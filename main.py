@@ -14,11 +14,27 @@ def get_mse(real, predict):
     return sum([(pred - real) ** 2 for pred in predict]) / len(predict)
 
 
+def img2txt(image):
+    with open('img.txt', 'w') as f:
+        for row in image:
+            s = ''
+            for pixel in row:
+                s += chr(pixel)
+            s += '\n'
+            f.write(s)
+
 if __name__ == "__main__":
 
     # file_path = r'./graph/dynamic/5dps/100ms/30/'
     # file_path = r'../graph/dynamic/variable_dps/6dps'
     # file_path = r'../graph/dynamic/fix60'
+
+    img = np.zeros((2048, 2048)).astype('uint8')
+    img[0, :5] = 1
+    img2txt(img)
+
+
+
     file_path = r'./graph/'
     images = os.listdir(file_path)
     # print(images)
@@ -30,7 +46,7 @@ if __name__ == "__main__":
         src = cv2.blur(src, (3, 3))
         theta = ae.Direction_estimate(src)
         ret, retImg = ex.extract(src, theta)
-        plt.imsave('./graph/{}_extract.png'.format(image), np.hstack((src, retImg)), cmap = 'gray', vmin = 0, vmax = 255)
+        # plt.imsave('./graph/{}_extract.png'.format(image), np.hstack((src, retImg)), cmap = 'gray', vmin = 0, vmax = 255)
         # print(image, direction)
         # directions.append(direction)
     # print('Res: ', np.array(directions))

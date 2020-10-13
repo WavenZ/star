@@ -290,29 +290,44 @@ def Direction_estimate(image):
             x = (b2 - b1) / (k1 - k2)
             y = k1 * x + b1
             # print(k1, b1, k2, b2, x, y)
-            Res.append([x, y, abs(b1 - b2)])
+            # Res.append([x, y, abs(b1 - b2)])
+            Res.append([x, y])
 
     # print(np.array(Res))
-    Res = np.array(sorted(Res, key=lambda x: x[2]))
+    # Res = np.array(sorted(Res, key=lambda x: x[2]))
+    Res = np.array(sorted(Res, key=lambda x : abs(x[0] - image.shape[0] / 2) 
+                                            + abs(x[1] - image.shape[1] / 2) )) # [: len(Res) - len(Res) // 3]
+    Use = Res[: len(Res) - len(Res) // 3]
     # print(Res[:, 1] / Res[:, 0])
 
     # print(Res)
-    S = np.mean(np.array(Res), 0)
-    pos = Res[np.where(Res[:, 0] > 0)]
-    pos = np.array(sorted(pos, key=lambda x: x[2]))[len(pos) // 3:]
-    neg = Res[np.where(Res[:, 0] <= 0)]
-    neg = np.array(sorted(neg, key=lambda x: x[2]))[len(neg) // 3:]
+    pos = Use[np.where(Use[:, 0] >  0)]
+    # pos = np.array(sorted(pos, key=lambda x: x[2]))[len(pos) // 3:]
+    neg = Use[np.where(Use[:, 0] <= 0)]
+    # neg = np.array(sorted(neg, key=lambda x: x[2]))[len(neg) // 3:]
     # print(pos)
     # print(neg)
     # print(np.mean(pos, 0))
+    S = []
     if pos.shape[0] >= neg.shape[0]:
         S = np.mean(pos, 0)
     else:
         S = np.mean(neg, 0)
     # print(np.mean(pos, 0))
     # print(np.mean(neg, 0))
-
+    
+    dis = np.linalg.norm(S - np.array(image.shape))
+    if dis > 5 * np.linalg.norm(np.array(image.shape) - [0, 0]):
+        Use = Res[len(Res) // 3: ]
+        pos = np.mean(Use[np.where(Use[:, 0] > 0)], 0)
+        neg = np.mean(Use[np.where(Use[:, 0] <= 0)], 0)
+        if abs(pos[0]) + abs(pos[1]) > abs(neg[0]) + abs(neg[1]):
+            S = pos
+        else:
+            S = neg
+            
     print(S)
+    # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     # The least squares solution of overdetermined equations: AX = b
     # X = (AᵀA)⁻¹Aᵀb
     # For y = kx + b => kx - y = -b
