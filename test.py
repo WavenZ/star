@@ -1,4 +1,10 @@
+import os
+import cv2
+import time
 import numpy as np
+import matplotlib.pyplot as plt
+
+from cv2 import cv2
 from PIL import Image
 
 kernels = []
@@ -40,6 +46,52 @@ def kernels2txt():
                     f.write(str(elem) + ' ')
                 f.write('\n')
 
+def img2txt(image):
+    with open('img.txt', 'w', newline='') as f:
+        # f.write((str(image.shape[0]) + '\n'))
+        # f.write((str(image.shape[1]) + '\n'))
+        s = ''
+        for row in image:
+            s += (''.join(chr(pixel) for pixel in row))
+            # for pixel in row:
+                # s += chr(pixel)
+        print(f.write(s))
+
+def txt2img(filename, h, w):
+    buf = []
+    with open(filename, 'rb') as f:
+        # h = int(f.readline())
+        # w = int(f.readline())
+        # print(h, w)
+        # print(f.read())
+        data = f.read()
+        print(type(data))
+        print(len(data))
+        for i in range(h):
+            temp = []
+            temp = [(data[i * w + j]) for j in range(w)]
+            buf.append(temp)
+    return np.array(buf)
+
+def conv(src, center):
+    '''Convolution for rotation mode.
+
+    '''
+    img2txt(src)
+    os.system('conv {} {} {} {}'.format(src.shape[0], src.shape[1], center[0], center[1]))
+    ret = txt2img('img1.txt', src.shape[0], src.shape[1])
+    return ret
+
 if __name__ == "__main__":
-    conv_init()
-    kernels2txt()
+    # conv_init()
+    # kernels2txt()
+
+    img = cv2.imread('./graph/5.png', 0)
+    img = conv(img, [1024, 1024])
+
+    # img = txt2img('img.txt')
+    # print(img[0])
+    plt.figure()
+    print(img.shape, img.shape)
+    plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+    plt.show()

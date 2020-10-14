@@ -1,3 +1,4 @@
+import os
 import cv2
 import time
 import numpy as np
@@ -12,26 +13,35 @@ def conv_init():
     for theta in range(-90, 91):
         kernels.append(get_kernel(11, 3, theta))
 
+# def conv(src, center):
+#     '''Convolution for rotation mode.
+
+#     '''
+#     # print(center[0], center[1])
+#     # center[1] = src.shape[0] - center[1]
+#     conv_init()
+#     ret = np.zeros_like(src)
+#     start = time.time()
+#     for row in range(6 , (src.shape[0] - 5)):
+#         for col in range(6 , (src.shape[1] - 5)):
+#             row = src.shape[0] - row - 1
+#             print((np.arctan((col - center[0]) / (row - center[1])) * 180 / np.pi).astype(np.int).item() + 90, end=' ')
+#             kernel = kernels[(np.arctan((col - center[0]) / (row - center[1])) * 180 / np.pi).astype(np.int).item() + 90]
+#             conv = np.sum(kernel * src[row - 5:row + 6, col - 5:col + 6])
+#             ret[row, col] = conv if conv >= 0 else 0
+#         break
+#     end = time.time()
+#     print(end - start)
+#     return ret
+
 def conv(src, center):
     '''Convolution for rotation mode.
 
+    Call conv.exe, implement by cpp.
     '''
-    # print(center[0], center[1])
-    # center[1] = src.shape[0] - center[1]
-    conv_init()
-    ret = np.zeros_like(src)
-    start = time.time()
-    for row in range(6 , (src.shape[0] - 5)):
-        for col in range(6 , (src.shape[1] - 5)):
-            row = src.shape[0] - row - 1
-            kernel = kernels[(np.arctan((col - center[0]) / (row - center[1])) * 180 / np.pi).astype(np.int).item() + 90]
-            conv = np.sum(kernel * src[row - 5:row + 6, col - 5:col + 6])
-            ret[row, col] = conv if conv >= 0 else 0
-            # print((np.arctan((row - center[0])/(col - center[1])) * 180 / np.pi))
-            # return ret
-            # print(kernel, src[row - 5:row + 6, col - 5:col + 6], ret[row, col])
-    end = time.time()
-    print(end - start)
+    img2txt(src)
+    os.system('conv {} {} {} {}'.format(src.shape[0], src.shape[1], center[0], center[1]))
+    ret = txt2img('img1.txt', src.shape[0], src.shape[1])
     return ret
 
 def get_kernel(size, width, theta):
@@ -105,13 +115,24 @@ def enhance(image, center):
     return ret
 
 def img2txt(image):
-    with open('img.txt', 'w') as f:
+    with open('img.txt', 'w', newline='') as f:
+        s = ''
         for row in image:
-            s = ''
-            for pixel in row:
-                s += chr(pixel)
-            s += '\n'
-            f.write(s)
+            s += (''.join(chr(pixel) for pixel in row))
+        
+        f.write(s)
+
+def txt2img(filename, h, w):
+    buf = []
+    with open(filename, 'rb') as f:
+        data = f.read()
+        for i in range(h):
+            temp = []
+            temp = [(data[i * w + j]) for j in range(w)]
+            buf.append(temp)
+
+    return np.array(buf).astype('uint8')
+
 
 def connectedComponents(image):
     ans, temp = list([]), list([])

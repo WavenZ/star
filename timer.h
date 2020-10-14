@@ -18,16 +18,18 @@ public:
         int cost = std::chrono::duration_cast<std::chrono::microseconds>(
             end_time - start_time).count();
         std::cout << std::setprecision(4);
+        std::cout << "[";
         if(cost < 1000){                // us
-            std::cout << "Time cost: " << cost << " us" << std::endl;
+            std::cout << "Time cost: " << cost << " us" ;
         }else if(cost < 1000000){       // ms
-            std::cout << "Time cost: " << cost / 1000.0 << " ms" << std::endl;
+            std::cout << "Time cost: " << cost / 1000.0 << " ms" ;
         }else if(cost < 60000000){    // s
-            std::cout << "Time cost: " << cost / 1000000.0 << " s" << std::endl;
+            std::cout << "Time cost: " << cost / 1000000.0 << " s" ;
         }else{                          // min
             std::cout << "Time cost: " << cost / 60000000 << " min "
-                                       << cost % 60000000 / 1000000 << " s" << std::endl;
+                                       << cost % 60000000 / 1000000 << " s";
         }
+        std::cout << "]" << std::endl;
         end_flag = true;
     }
 private:
