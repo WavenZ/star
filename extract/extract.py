@@ -1,6 +1,7 @@
 import os
 import cv2
 import time
+import collections
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -39,18 +40,20 @@ def conv(src, center):
 
     Call conv.exe, implement by cpp.
     '''
+    print(src.dtype)
     img2txt(src)
     os.system('conv {} {} {} {}'.format(src.shape[0], src.shape[1], center[0], center[1]))
     ret = txt2img('img1.txt', src.shape[0], src.shape[1])
+    
     return ret
 
 def get_kernel(size, width, theta):
     """Construct the convolution kernel.
-        
+
     Args: size：size of kernel, (Height, Width)
           width：Width of the positive region.
           theta：Rotation angle.
-    
+
     Notes：
         (size - width) shoule be even, so that the converlution kernel is symmetric.
     """
@@ -90,17 +93,17 @@ def threshold(img, percentage = None, num = None):
 
 def enhance(image, center):
     '''The image is enhanced by convolution.
-    
+
     Args:
         image: Image to be enhanced.
         center: Center of rotation.
-    
+
     Returns:
         Enhanced image
     '''
     # mode: 0 parallel mode, 1 ratation mode
     mode = 0
-    
+
     # Select mode.
     dis = np.linalg.norm(center - np.array(image.shape))
     if dis < 5 * np.linalg.norm(np.array(image.shape) - [0, 0]):
@@ -119,8 +122,7 @@ def img2txt(image):
         s = ''
         for row in image:
             s += (''.join(chr(pixel) for pixel in row))
-        
-        f.write(s)
+        f.write(s)  
 
 def txt2img(filename, h, w):
     buf = []
@@ -135,32 +137,65 @@ def txt2img(filename, h, w):
 
 
 def connectedComponents(image):
+    start = time.time()
+    # ans = list([])
+    # src = image.copy()
+    # Q = collections.deque()
+    # for i in range(src.shape[0]):
+    #     for j in range(src.shape[1]):
+    #         if src[i][j] == 255:
+    #             src[i][j] = 0
+    #             Q.append([i, j])
+    #             temp = list([])
+    #             while Q:
+    #                 for k in range(len(Q)):
+    #                     x, y = Q.popleft()
+    #                     temp.append([x, y])
+    #                     for dx in [-1, 0, 1]:
+    #                         for dy in [-1, 0, 1]:
+    #                             if dx == 0 and dy == 0:
+    #                                 continue
+    #                             if x + dx < 0 or x + dx >= src.shape[0]:
+    #                                 continue
+    #                             if y + dy < 0 or y + dy >= src.shape[1]:
+    #                                 continue
+    #                             if src[x + dx][y + dy] == 255:
+    #                                 src[x + dx][y + dy] = 0
+    #                                 Q.append([x + dx, y + dy])
+    #             ans.append(temp)
+
     ans, temp = list([]), list([])
-    vis = np.zeros_like(image)
+    src = image.copy()
     def dfs(x, y):
-        nonlocal temp, image
+        # print(x, y)
+        nonlocal temp, src
         temp.append([x, y])
-        vis[x][y] = 1
-        if x > 0 and not vis[x - 1][y] and image[x - 1][y] == 255:
+        src[x][y] = 0
+        if x > 0 and src[x - 1][y] == 255:
             dfs(x - 1, y)
-        if x < image.shape[0] - 1 and not vis[x + 1][y] and image[x + 1][y] == 255:
+        if x < src.shape[0] - 1 and src[x + 1][y] == 255:
             dfs(x + 1, y)
-        if y > 0 and not vis[x][y - 1] and image[x][y - 1] == 255:
+        if y > 0 and src[x][y - 1] == 255:
             dfs(x, y - 1)
-        if y < image.shape[1] - 1 and not vis[x][y + 1] and image[x][y + 1] == 255:
+        if y < src.shape[1] - 1 and src[x][y + 1] == 255:
             dfs(x, y + 1)
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            if not vis[i][j] and image[i][j] == 255:
+    for i in range(src.shape[0]):
+        for j in range(src.shape[1]):
+            if src[i][j] == 255:
                 temp = []
                 dfs(i, j)
                 ans.append(temp)
+    end = time.time()
+    print(end - start)
     return ans
 
 
 def extract(image, theta):
     image = enhance(image, theta)
     thImg = threshold(image, percentage = 0.002)
+    plt.figure()
+    plt.imshow(thImg, cmap='gray', vmin=0, vmax=255)
+    plt.show()
     # ret, labels = cv2.connectedComponents(thImg, connectivity=None)
     ret = connectedComponents(thImg)
     retImg = np.zeros_like(image)

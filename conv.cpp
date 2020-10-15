@@ -17,6 +17,8 @@ const int nthread = 8;
 
 vector<vector<vector<double>>> kernels;
 void kread(const string& filename){
+    cout << __func__ << endl;
+    Timer t;
     ifstream in(filename);
     kernels = vector<vector<vector<double>>>(181, vector<vector<double>>(11, vector<double>(11)));
     for(int i = 0; i < 181; ++i){
@@ -90,6 +92,7 @@ int main(int argc, char* argv[]){
     cout << "[Call conv.exe...]" << endl;
     cout << "[h = " << h << "  w = " << w << "]" << endl;
     cout << "[x = " << cx << "  y = " << cy << "]" << endl;
+    cout << "@@" << endl;
     auto src = imread("img.txt");
     kread("kernel.txt");
     char* ret = conv(src);
