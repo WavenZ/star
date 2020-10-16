@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 # import pandas as pd
+import numpy.ctypeslib as npct
 
+from ctypes import *
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
@@ -187,7 +189,8 @@ def Direction_estimate(image):
     # Result.
     Theta, Intercept, Linear, Window = list([]), list([]), list([]), list([])
     show = Image.fromarray(image)
-    font = ImageFont.truetype('C:\\Windows\\Fonts\\SIMYOU.TTF', 32)
+    # font = ImageFont.truetype('C:\\Windows\\Fonts\\SIMYOU.TTF', 32)
+    font = ImageFont.truetype('arial.ttf', 32)
     anno = ImageDraw.Draw(show)
 
     Vis = []

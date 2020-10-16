@@ -4,15 +4,12 @@ import time
 import collections
 import numpy as np
 import matplotlib.pyplot as plt
+import numpy.ctypeslib as npct
 
+from ctypes import *
 from cv2 import cv2
 from PIL import Image
 
-kernels = []
-
-def conv_init():
-    for theta in range(-90, 91):
-        kernels.append(get_kernel(11, 3, theta))
 
 # def conv(src, center):
 #     '''Convolution for rotation mode.
@@ -190,18 +187,34 @@ def connectedComponents(image):
     return ans
 
 
-def extract(image, theta):
-    image = enhance(image, theta)
-    thImg = threshold(image, percentage = 0.002)
-    plt.figure()
-    plt.imshow(thImg, cmap='gray', vmin=0, vmax=255)
-    plt.show()
-    # ret, labels = cv2.connectedComponents(thImg, connectivity=None)
-    ret = connectedComponents(thImg)
-    retImg = np.zeros_like(image)
-    for r in ret:
-        if len(r) > 50:
-            retImg[list(np.array(r).T)] = 255
+def extract(src, theta):
+    res = np.zeros_like(src)
+
+    kernels = []
+    for alpha in range(-90, 91):
+        kernels.append(get_kernel(11, 3, alpha))
+    kernels = np.array(kernels).astype(np.float)
+
+    x0, y0 = int(theta[0]), int(theta[1])
+
+    # lib = npct.load_library("test",".")
+    lib = cdll.LoadLibrary('./test.so')
+    lib.conv_and_bin.argtypes = [npct.ndpointer(dtype=np.uint8, ndim=src.ndim, shape=src.shape, flags="C_CONTIGUOUS"),
+        c_int, c_int, c_int, c_int, npct.ndpointer(dtype=np.uint8, ndim=res.ndim, shape=res.shape, flags="C_CONTIGUOUS"),
+        npct.ndpointer(dtype=np.float, ndim=kernels.ndim, shape=kernels.shape, flags="C_CONTIGUOUS")]
+    
+    lib.conv_and_bin(src, c_int(src.shape[0]), c_int(src.shape[1]), c_int(x0), c_int(y0), res, kernels)
+    # image = enhance(image, theta)
+    # thImg = threshold(image, percentage = 0.002)
+    # plt.figure()
+    # plt.imshow(thImg, cmap='gray', vmin=0, vmax=255)
+    # plt.show()
+    # # ret, labels = cv2.connectedComponents(thImg, connectivity=None)
+    # ret = connectedComponents(thImg)
+    # retImg = np.zeros_like(image)
+    # for r in ret:
+    #     if len(r) > 50:
+    #         retImg[list(np.array(r).T)] = 255
     # print(ret)
     # plt.figure()
     # plt.imshow(np.hstack((image, retImg)), cmap='gray')
@@ -213,4 +226,4 @@ def extract(image, theta):
     # plt.figure()
     # plt.imshow(np.hstack((image, thImage)), cmap='gray')
     # plt.show9)
-    return ret, retImg
+    return res
