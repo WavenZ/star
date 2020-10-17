@@ -55,12 +55,12 @@ def get_kernel(size, width, theta):
         (size - width) shoule be even, so that the converlution kernel is symmetric.
     """
 
-    temp = np.zeros((size + 10,size + 10))
-    temp [(size - width) // 2 + 5:(size - width) // 2 + 5 + width,:] = 1
+    temp = np.zeros((size + 20, size + 20))
+    temp [(size - width) // 2 + 10: (size - width) // 2 + 10 + width,:] = 1
     temp = Image.fromarray(temp)
     temp = temp.rotate(theta)
     temp = np.array(temp)
-    kernel = temp[5:-5, 5:-5]
+    kernel = temp[10:-10, 10:-10]
     cnt = np.sum(kernel)
     for i in range(size):
         for j in range(size):
@@ -107,7 +107,7 @@ def enhance(image, center):
         mode = 1
     if mode == 0:
         theta = np.arctan(- center[0] / center[1]) * 180 /  np.pi
-        kernel = get_kernel(11, 3, theta)
+        kernel = get_kernel(17, 3, theta)
         ret = cv2.filter2D(image, -1, kernel)
     if mode == 1:
         ret = conv(image, center)
@@ -188,14 +188,16 @@ def connectedComponents(image):
 
 
 def extract(src, theta):
-    res = np.zeros_like(src)
 
     kernels = []
     for alpha in range(-90, 91):
-        kernels.append(get_kernel(11, 3, alpha))
+        kernels.append(get_kernel(13, 3, alpha))
+
     kernels = np.array(kernels).astype(np.float)
 
     x0, y0 = int(theta[0]), int(theta[1])
+
+    res = np.zeros_like(src)
 
     # lib = npct.load_library("test",".")
     lib = cdll.LoadLibrary('./test.so')
@@ -204,26 +206,5 @@ def extract(src, theta):
         npct.ndpointer(dtype=np.float, ndim=kernels.ndim, shape=kernels.shape, flags="C_CONTIGUOUS")]
     
     lib.conv_and_bin(src, c_int(src.shape[0]), c_int(src.shape[1]), c_int(x0), c_int(y0), res, kernels)
-    # image = enhance(image, theta)
-    # thImg = threshold(image, percentage = 0.002)
-    # plt.figure()
-    # plt.imshow(thImg, cmap='gray', vmin=0, vmax=255)
-    # plt.show()
-    # # ret, labels = cv2.connectedComponents(thImg, connectivity=None)
-    # ret = connectedComponents(thImg)
-    # retImg = np.zeros_like(image)
-    # for r in ret:
-    #     if len(r) > 50:
-    #         retImg[list(np.array(r).T)] = 255
-    # print(ret)
-    # plt.figure()
-    # plt.imshow(np.hstack((image, retImg)), cmap='gray')
-    # plt.show()
-    # k = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    # thImg = cv2.morphologyEx(thImg, cv2.MORPH_OPEN, k)
-    # k = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    # thImg = cv2.morphologyEx(thImg, cv2.MORPH_OPEN, k)
-    # plt.figure()
-    # plt.imshow(np.hstack((image, thImage)), cmap='gray')
-    # plt.show9)
+    
     return res

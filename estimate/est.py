@@ -202,8 +202,8 @@ def Direction_estimate(image):
             mean = np.mean(window)
 
             # Skip while it's too bright.
-            if mean > 180:  
-                continue
+            # if mean > 180:  
+                # continue
             
             # Threshoulding.
             thImg = threshold(window, 5) 
@@ -212,8 +212,8 @@ def Direction_estimate(image):
             points = np.array(np.where(thImg == 255))
 
             # Skip while the distribution is too scattered.
-            if np.std(points[0]) + np.std(points[1]) > 50: 
-                continue
+            # if np.std(points[0]) + np.std(points[1]) > 50: 
+            #     continue
 
             # Adjust the window so that the stars are in the middle of the window.
             dx, dy = np.mean(points, 1).astype(np.int32) - 50
@@ -229,6 +229,8 @@ def Direction_estimate(image):
                 
                 # Get the coordinates of positive points.
                 points = np.array(np.where(thImg == 255))
+
+            image[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
 
             # Skip visited window
             x, y = np.mean(points, 1).astype(np.int32) + [i * winsize + dx, j * winsize + dy]
@@ -249,19 +251,19 @@ def Direction_estimate(image):
                     Intercept.append(intercept)
                     Linear.append(linear)
                     Window.append(window)
-                    anno.line((y + 5, x + 5, j * winsize + dy + 70,  i * winsize + dx + 70), fill = 255, width = 1)
-                    anno.text((j * winsize + dy + 70, i * winsize + dx + 70), '{:.4f}'.format(linear), font = font, fill = 'white')
+                    # anno.line((y + 5, x + 5, j * winsize + dy + 70,  i * winsize + dx + 70), fill = 255, width = 1)
+                    # anno.text((j * winsize + dy + 70, i * winsize + dx + 70), '{:.4f}'.format(linear), font = font, fill = 'white')
                     # print(points)C:\\Windows\\Fonts\\SIMYOU.TTF
                     # print(list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T))
-                    # show[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
+                    # image[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
                     # image[list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T)] = 255
             #     print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
             # plt.figure()
             # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
             # plt.show()
-    # plt.figure()
-    # plt.imshow(image, cmap = 'gray')
-    # plt.show()
+    plt.figure()
+    plt.imshow(image, cmap = 'gray')
+    plt.show()
 
     if len(Theta) == 0:
         return [99999, 99999]
