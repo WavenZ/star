@@ -188,7 +188,17 @@ def connectedComponents(image):
 
 
 def extract(src, theta):
+    '''Extract stars from src(image).
 
+    Call function conv_and_bin() in extract.dll
+
+    Args:
+        src: Source image.
+        center: Rotation center.
+
+    Returns:
+        Binarized image.
+    '''
     kernels = []
     for alpha in range(-90, 91):
         kernels.append(get_kernel(13, 3, alpha))

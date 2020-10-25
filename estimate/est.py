@@ -61,12 +61,16 @@ def pca(points, xref, yref):
     # The shorter the star is, the smaller the requirement for 
     # the size of the first principal component is.
     limit = 0.9 + 0.002 * (dx + dy)
+
+    # limit = 0.5
+
+
     if limit > 0.995:
         limit = 0.995
     # The first principal component is greater than the limit.
     # print(pca.explained_variance_ratio_[0], limit)
     if pca.explained_variance_ratio_[0] > limit: 
-        # print(pca.explained_variance_ratio_[0])
+        # print(pca.explained_variance_ratio_[0], limit)
         return k, b, pca.explained_variance_ratio_[0]
     return 0, 0, 0 # Directly identified as a fake star.
 
@@ -202,18 +206,19 @@ def Direction_estimate(image):
             mean = np.mean(window)
 
             # Skip while it's too bright.
-            # if mean > 180:  
-                # continue
+            if mean > 180:  
+                continue
             
             # Threshoulding.
-            thImg = threshold(window, 5) 
+            thImg = threshold(window, 4) 
             
             # Get the coordinates of positive points.
             points = np.array(np.where(thImg == 255))
 
             # Skip while the distribution is too scattered.
-            # if np.std(points[0]) + np.std(points[1]) > 50: 
-            #     continue
+            if np.std(points[0]) + np.std(points[1]) > 30: 
+                continue
+            # print(i, j, np.std(points[0]) + np.std(points[1]))
 
             # Adjust the window so that the stars are in the middle of the window.
             dx, dy = np.mean(points, 1).astype(np.int32) - 50
@@ -225,12 +230,12 @@ def Direction_estimate(image):
                 window = image[i * winsize + dx: (i + 1) * winsize + dx,
                             j * winsize + dy: (j + 1) * winsize + dy]
                 # Threshoulding.
-                thImg = threshold(window, 5) 
+                thImg = threshold(window, 4) 
                 
                 # Get the coordinates of positive points.
                 points = np.array(np.where(thImg == 255))
 
-            image[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
+            # image[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
 
             # Skip visited window
             x, y = np.mean(points, 1).astype(np.int32) + [i * winsize + dx, j * winsize + dy]
@@ -258,15 +263,15 @@ def Direction_estimate(image):
                     # image[list((points.T + [i * winsize + dx, j * winsize + dy]).T)] = 255
                     # image[list((points.T + np.array([i * winsize + dx, j * winsize + dy])).T)] = 255
             #     print(len(list(points.T)), np.arctan(theta) * 180 / np.pi, linear)
-            # plt.figure()
-            # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
-            # plt.show()
-    plt.figure()
-    plt.imshow(image, cmap = 'gray')
-    plt.show()
-
+                    # plt.figure()
+                    # plt.imshow(np.hstack((thImg, window)), cmap = 'gray')
+                    # plt.show()
+    # plt.figure()
+    # plt.imshow(image, cmap = 'gray')
+    # plt.show()
     if len(Theta) == 0:
         return [99999, 99999]
+
 
 
     Theta = np.vstack((Theta, Intercept, Linear)).T
@@ -284,7 +289,6 @@ def Direction_estimate(image):
     Intercept = Intercept[num: ]
     Linear = Linear[num: ]
     # print(Theta)
-
     Res = []
     for i in range(len(Theta)):
         for j in range(i + 1, len(Theta)):
@@ -302,7 +306,8 @@ def Direction_estimate(image):
     # Res = np.array(sorted(Res, key=lambda x: x[2]))
     Res = np.array(sorted(Res, key=lambda x : abs(x[0] - image.shape[0] / 2) 
                                             + abs(x[1] - image.shape[1] / 2) )) # [: len(Res) - len(Res) // 3]
-    Use = Res[: len(Res) - len(Res) // 3]
+    # Use = Res[: len(Res) - len(Res) // 3]
+    Use = Res
     # print(Res[:, 1] / Res[:, 0])
 
     # print(Res)
@@ -320,9 +325,11 @@ def Direction_estimate(image):
         S = np.mean(neg, 0)
     # print(np.mean(pos, 0))
     # print(np.mean(neg, 0))
-    
+    print(S)
+
     dis = np.linalg.norm(S - np.array(image.shape))
-    if dis > 5 * np.linalg.norm(np.array(image.shape) - [0, 0]):
+    print('dis: ', dis)
+    if dis > 3 * np.linalg.norm(np.array(image.shape) - [0, 0]):
         Use = Res[len(Res) // 3: ]
         pos = np.mean(Use[np.where(Use[:, 0] > 0)], 0)
         neg = np.mean(Use[np.where(Use[:, 0] <= 0)], 0)
@@ -331,7 +338,6 @@ def Direction_estimate(image):
         else:
             S = neg
             
-    print(S)
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     # The least squares solution of overdetermined equations: AX = b
     # X = (AᵀA)⁻¹Aᵀb
@@ -343,9 +349,9 @@ def Direction_estimate(image):
     # b = - np.array(Intercept)
     # S = np.linalg.inv(np.dot(A.T, A)).dot(A.T).dot(b)
     # print(S)
-    anno.ellipse((S[0] - 5, (image.shape[0] - S[1]) - 5, S[0] + 5, (image.shape[0] - S[1]) + 5), fill = 'white')
+    # anno.ellipse((S[0] - 5, (image.shape[0] - S[1]) - 5, S[0] + 5, (image.shape[0] - S[1]) + 5), fill = 'white')
     # show.show()
-
+    print(np.arctan(S[0]/S[1]) * 180 / np.pi)
     return S[: 2]
 
 
@@ -405,12 +411,12 @@ def imshow(*images):
 
 
 if __name__ == '__main__':
-    file_path = r'C:\Users\14355\star\image\a'
+    file_path = r'./graph/'
     images = os.listdir(file_path)
     for image in images:
         if image[-3:] != 'png':
             continue
-        print(image, end = ' ')
+        print(image)
         src = cv2.imread(file_path + '\\' + image, 0)
         blured = cv2.blur(src, (3, 3))
         # blured = src

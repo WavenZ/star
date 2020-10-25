@@ -49,8 +49,10 @@ class StarGenerator(object):
         delta_pitch = 0
         delta_yaw = 0
         delta_roll = 0
+        # self.stars = self.stars[:3000]
+        np.random.shuffle(self.stars)
+        self.stars = self.stars[:400]
 
-        
         for i in range(exposure):
             delta_pitch += self.to_rad(pitchspd / 1000)
             delta_yaw += self.to_rad(yawspd / 1000)
@@ -88,7 +90,7 @@ class StarGenerator(object):
 
             # Place stars in image.
             for i in range(y.shape[1]):
-                self.put_stars(img, y[0, i], y[1, i], 10000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
+                self.put_stars(img, y[0, i], y[1, i], 10000000 / pow(2.51, self.stars[int(starID[i]), 1] - 2) / 30,
                             starsize, winvisible, winradius)
 
         # Add noise.
@@ -185,8 +187,11 @@ class StarGenerator(object):
             img[np.where(img > 255)] = 255
             img[np.where(img < 0)] = 0
 
+            plt.figure()
+            plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+            plt.show()
             # Save image.
-            plt.imsave('./graph/dynamic/multi_frame/b_0_5_10_120/{}.png'.format(k + 1), img, cmap = 'gray', vmin = 0, vmax = 255)
+            # plt.imsave('./graph/dynamic/multi_frame/b_0_5_10_120/{}.png'.format(k + 1), img, cmap = 'gray', vmin = 0, vmax = 255)
 
     def add_noise(self, img, sigma):
         '''Add some noise'''
@@ -237,13 +242,15 @@ if __name__ == "__main__":
     roll = 0
     
     # Set the acceleration and the final speed.
-    pitchspd, yawspd, rollspd = 0, 5, 10
+    pitchspd, yawspd, rollspd = 60, 0, 0
     pitchspd_acc, yawspd_acc, rollspd_acc = 0, 1, 2
     
     # Generate.
-    G.generateMulti(pitch, yaw, roll, pitchspd, yawspd, rollspd, pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 100, winvisible = False, noise = 3, frames = 120)
-
-
+    # G.generateMulti(pitch, yaw, roll, pitchspd, yawspd, rollspd, pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 1000, winvisible = False, noise = 3, frames = 120)
+    img, _ = G.generate(pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure=6000, starsize=1.3)
+    plt.figure()
+    plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+    plt.show()
     # plt.figure(figsize = (5, 5))
     # plt.subplot(111, facecolor = 'k')
     # plt.xlim([0, 2048])
