@@ -272,8 +272,6 @@ def Direction_estimate(image):
     if len(Theta) == 0:
         return [99999, 99999]
 
-
-
     Theta = np.vstack((Theta, Intercept, Linear)).T
     # print(Theta)
 
@@ -301,6 +299,72 @@ def Direction_estimate(image):
             # print(k1, b1, k2, b2, x, y)
             # Res.append([x, y, abs(b1 - b2)])
             Res.append([x, y])
+
+    # print(len(Res))
+    Res = np.array(Res)
+    Use = Res
+    pos = Res[np.where(Res[:, 0] >  0)]
+    neg = Res[np.where(Res[:, 0] <= 0)]
+
+    # print(pos)
+    # print(neg)
+    if pos.shape[0] >= neg.shape[0]:
+        Use = pos
+    else:
+        Use = neg
+    # print(Use.shape)
+    # print(np.mean(Use, 0))
+    # print(Use)
+
+    # print('dis: ')
+    dis = np.linalg.norm(Use - np.array(image.shape) / 2, axis=1)
+    # print(np.linalg.norm(Use - np.array(image.shape) / 2, axis=1))
+    inf = np.sum(dis > 8192)
+
+    if inf < Use.shape[0] // 3:
+        for i in range(Use.shape[0] // 3):
+            mean = np.mean(Use, 0)
+            diff = np.sum((Use - mean) * (Use - mean), 1)
+            var = np.sum(diff) / Use.shape[0]
+
+            # if var > 100:
+            #     break
+            # print(var)
+
+            Use = np.delete(Use, np.argmax(diff), axis=0)
+    S = np.mean(Use, 0)
+    '''
+    A = - np.ones((len(Theta), 2))
+    A[:, 0] = np.array(Theta)
+    b = - np.array(Intercept)
+    S = np.linalg.inv(np.dot(A.T, A)).dot(A.T).dot(b)
+    '''
+
+
+    # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
+    return S
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # print(np.array(Res))
     # Res = np.array(sorted(Res, key=lambda x: x[2]))
@@ -337,7 +401,6 @@ def Direction_estimate(image):
             S = pos
         else:
             S = neg
-            
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     # The least squares solution of overdetermined equations: AX = b
     # X = (AᵀA)⁻¹Aᵀb
@@ -408,17 +471,24 @@ def imshow(*images):
     plt.show()
 
 
+def get_mse(real, predict):
+    """Mean square error."""
 
+    return sum([(pred - real) ** 2 for pred in predict]) / len(predict)
 
 if __name__ == '__main__':
     file_path = r'./graph/'
     images = os.listdir(file_path)
+    Center = []
     for image in images:
         if image[-3:] != 'png':
             continue
-        print(image)
+        print(image, end=' ')
         src = cv2.imread(file_path + '\\' + image, 0)
         blured = cv2.blur(src, (3, 3))
         # blured = src
         center =  Direction_estimate(blured)
+        Center.append(center)
         print(center)
+    print('mse: ', get_mse(1024, Center))
+    

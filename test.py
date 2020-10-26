@@ -1,52 +1,44 @@
-import cv2
-from ctypes import *
-import time
-from PIL import Image
 import numpy as np
-import numpy.ctypeslib as npct
 import matplotlib.pyplot as plt
+import cv2
 
-kernels = []
+from cv2 import cv2
 
-def conv_init():
-    for theta in range(-90, 91):
-        kernels.append(get_kernel(11, 3, theta))
+if __name__ == "__main__":
 
-def get_kernel(size, width, theta):
-
-    temp = np.zeros((size + 10,size + 10))
-    temp [(size - width) // 2 + 5:(size - width) // 2 + 5 + width,:] = 1
-    temp = Image.fromarray(temp)
-    temp = temp.rotate(theta)
-    temp = np.array(temp)
-    kernel = temp[5:-5, 5:-5]
-    cnt = np.sum(kernel)
-    for i in range(size):
-        for j in range(size):
-            kernel[i, j] = cnt / (cnt - size * size) if kernel[i, j] == 0 else kernel[i, j]
-    kernel = kernel / 4
-    return kernel
-
-if __name__ == '__main__':
-    conv_init()
-    src = cv2.imread('./graph/1.png', 0).astype(np.uint8)
-    res = np.zeros_like(src)
-
-    kernels = np.array(kernels).astype(np.float)
-
-    x0, y0 = 1024, 1024
-    # lib = npct.load_library("test",".")
-    lib = cdll.LoadLibrary('./test.so')
-    # lib.onedemiarr.argtypes = [npct.ndpointer(dtype = np.int, ndim = 1, flags="C_CONTIGUOUS"), c_int]
-    lib.conv_and_bin.argtypes = [npct.ndpointer(dtype=np.uint8, ndim=src.ndim, shape=src.shape, flags="C_CONTIGUOUS"),
-        c_int, c_int, c_int, c_int, npct.ndpointer(dtype=np.uint8, ndim=res.ndim, shape=res.shape, flags="C_CONTIGUOUS"),
-        npct.ndpointer(dtype=np.float, ndim=kernels.ndim, shape=kernels.shape, flags="C_CONTIGUOUS")]
-    
-    start = time.time()
-    lib.conv_and_bin(src, c_int(src.shape[0]), c_int(src.shape[1]), c_int(x0), c_int(y0), res, kernels)
-    end = time.time()
-    print('Time cost:', end - start)
-
+    plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+    plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+    y1 = np.array([[34.21101646, 30.62484186], 
+                    [9.9741075,  11.93156095],
+                    [4.93469192, 6.50547724],
+                    [3.13355196, 3.89910064], 
+                    [1.69171271, 2.65963118],
+                    [1.40293031, 2.48512765], 
+                    [1.29675331, 2.80221985], 
+                    [1.06578332, 2.12047665],
+                    [1.26215376, 2.24628645],
+                    [0.90971327, 2.96893019],
+                    [0.9872991,  1.96481357]] )
+    y2 = np.array([[196.88979146, 440.04154334],
+                    [97.1058719,  154.84369687],
+                    [102.10942174, 119.54363543],
+                    [26.71368261, 95.67408188],
+                    [23.74632281, 41.32492529],
+                    [14.89004322, 19.02805942],
+                    [12.74851751, 31.90940675],
+                    [17.15390605, 22.48118942],
+                    [6.14760861, 13.25526315],
+                    [4.48526948, 27.66525789],
+                    [20.24664135, 30.12725922]])
+    y1 = np.sum(y1, 1)
+    y2 = np.sum(y2, 1)
+    x = np.array([10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60])
     plt.figure()
-    plt.imshow(res, cmap='gray', vmin=0, vmax=255)
-    plt.show()    
+    plt.plot(x, y1, 'x-', linewidth=0.5, label='本文方法')
+    # plt.plot(x, y1)
+    plt.plot(x, y2, '^-', linewidth=0.5, label='最小二乘法')
+    plt.xlabel('角速度（°/s）')
+    plt.ylabel('均方误差')
+    plt.legend()
+    # plt.plot(x, y2)
+    plt.show()
