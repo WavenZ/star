@@ -1,4 +1,5 @@
 import cv2
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 # import pandas as pd
@@ -60,7 +61,7 @@ def pca(points, xref, yref):
     # range of [0.9 - 0.99]
     # The shorter the star is, the smaller the requirement for 
     # the size of the first principal component is.
-    limit = 0.9 + 0.002 * (dx + dy)
+    limit = 0.8 + 0.004 * (dx + dy)
 
     # limit = 0.5
 
@@ -70,7 +71,7 @@ def pca(points, xref, yref):
     # The first principal component is greater than the limit.
     # print(pca.explained_variance_ratio_[0], limit)
     if pca.explained_variance_ratio_[0] > limit: 
-        # print(pca.explained_variance_ratio_[0], limit)
+        # print(pca.explained_variance_ratio_[0], limit, 0.8 + 0.006 * (dx + dy))
         return k, b, pca.explained_variance_ratio_[0]
     return 0, 0, 0 # Directly identified as a fake star.
 
@@ -300,7 +301,7 @@ def Direction_estimate(image):
             # Res.append([x, y, abs(b1 - b2)])
             Res.append([x, y])
 
-    # print(len(Res))
+    # print(Res, sep='\n')
     Res = np.array(Res)
     Use = Res
     pos = Res[np.where(Res[:, 0] >  0)]
@@ -339,6 +340,7 @@ def Direction_estimate(image):
     b = - np.array(Intercept)
     S = np.linalg.inv(np.dot(A.T, A)).dot(A.T).dot(b)
     '''
+
 
 
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
@@ -414,6 +416,7 @@ def Direction_estimate(image):
     # print(S)
     # anno.ellipse((S[0] - 5, (image.shape[0] - S[1]) - 5, S[0] + 5, (image.shape[0] - S[1]) + 5), fill = 'white')
     # show.show()
+
     print(np.arctan(S[0]/S[1]) * 180 / np.pi)
     return S[: 2]
 
@@ -473,22 +476,41 @@ def imshow(*images):
 
 def get_mse(real, predict):
     """Mean square error."""
+    predict = np.array(predict)
+    diff = np.linalg.norm(predict - real, axis=1)
+    # print(diff * diff)
+    # print(np.mean(diff * diff))
+    return np.sqrt(sum(diff * diff) / (len(predict) - 1))
+    # return sum([(pred - real) ** 2 for pred in predict]) / (len(predict) - 1)
 
-    return sum([(pred - real) ** 2 for pred in predict]) / len(predict)
+def get_std(predict):
+    predict = np.array(predict)
+    return np.std(predict)
 
 if __name__ == '__main__':
-    file_path = r'./graph/'
-    images = os.listdir(file_path)
-    Center = []
-    for image in images:
-        if image[-3:] != 'png':
-            continue
-        print(image, end=' ')
-        src = cv2.imread(file_path + '\\' + image, 0)
-        blured = cv2.blur(src, (3, 3))
-        # blured = src
-        center =  Direction_estimate(blured)
-        Center.append(center)
-        print(center)
-    print('mse: ', get_mse(1024, Center))
+    print('\n\n\n\n\n')
+    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
+    res = []
+    # for ms in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+    for dps in [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]:
+        print('-----------------------------------------------')
+        print('[Dps: {}]'.format(dps))
+        file_path = r'../graph/dynamic/round/{}dps'.format(dps)
+        images = os.listdir(file_path)
+        Center = []
+        for image in images:
+            if image[-3:] != 'png':
+                continue
+            print(image, end=' ')
+            src = cv2.imread(file_path + '\\' + image, 0)
+            blured = cv2.blur(src, (3, 3))
+            # blured = src
+            center =  Direction_estimate(blured)
+            Center.append(center)
+            print(center)
+        mse = get_mse([1024, 1024], Center)
+        # mse = get_std(Center)
+        print('mse: ', mse)
+        res.append(mse)
+    print(res)
     

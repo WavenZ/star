@@ -238,7 +238,7 @@ if __name__ == "__main__":
     G = StarGenerator('sao60')
     
     # Set the acceleration and the final speed.
-    pitchspd, yawspd, rollspd = 0, 0, 55
+    pitchspd, yawspd, rollspd = 0, 0, 60
     pitchspd_acc, yawspd_acc, rollspd_acc = 0, 1, 2
     
     # Randomly generate the initialization position.
@@ -253,22 +253,22 @@ if __name__ == "__main__":
     # plt.imshow(img, cmap='gray', vmin=0, vmax=255)
     # plt.show()
     
-    
-    for i in range(100):
-        # Randomly generate the initialization position.
-        pitch = np.random.randint(-90, 90)
-        yaw = np.random.randint(0, 360)
-        roll = 0
-        
-        # Generate.
-        # G.generateMulti(pitch, yaw, roll, pitchspd, yawspd, rollspd, pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 1000, winvisible = False, noise = 3, frames = 120)
-        img, _ = G.generate(pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure=100, starsize=1.2)
-        # plt.figure()
-        # plt.imshow(img, cmap='gray', vmin=0, vmax=255)
-        # plt.show()
-        img = Image.fromarray(img)
-        img = img.convert('L')
-        img.save('../graph/dynamic/round/55/{}.png'.format(i))
+    for nos in range(11):
+        for i in range(100):
+            # Randomly generate the initialization position.
+            pitch = np.random.randint(-90, 90)
+            yaw = np.random.randint(0, 360)
+            roll = 0
+            
+            # Generate.
+            # G.generateMulti(pitch, yaw, roll, pitchspd, yawspd, rollspd, pitchspd_acc, yawspd_acc, rollspd_acc, exposure = 1000, winvisible = False, noise = 3, frames = 120)
+            img, _ = G.generate(pitch, yaw, roll, pitchspd, yawspd, rollspd, exposure=100, starsize=1.2, noise=nos)
+            # plt.figure()
+            # plt.imshow(img, cmap='gray', vmin=0, vmax=255)
+            # plt.show()
+            img = Image.fromarray(img)
+            img = img.convert('L')
+            img.save('../graph/dynamic/round/noise{}/{}.png'.format(nos, i))
     
     
     
