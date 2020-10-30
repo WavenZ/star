@@ -25,14 +25,20 @@ if __name__ == "__main__":
     directions = []
     for image in images:
         print(image)
-        src = cv2.imread(file_path + '\\' + image, 0)
-        # print(src.shape)
+        src = cv2.imread(file_path + '/' + image, 0)
+        print(src.shape)
         src = cv2.blur(src, (3, 3))
-        theta = ae.Direction_estimate(src)
+        # theta = ae.Direction_estimate(src)
+        theta = [1000000, 1730000]
         print(theta)
-        ret, retImg = ex.extract(src, theta)
-        plt.imsave('./graph/{}_extract.png'.format(image), np.hstack((src, retImg)), cmap = 'gray', vmin = 0, vmax = 255)
-        # print(image, direction)
+        retImg = ex.extract(src, theta)
+        plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
+
+        plt.figure()
+        plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
+        plt.show()
+        # plt.imsave('./graph/{}_extract.png'.format(image), np.hstack((src, retImg)), cmap = 'gray', vmin = 0, vmax = 255)
+        # # print(image, direction)
         # directions.append(direction)
     # print('Res: ', np.array(directions))
     # print()

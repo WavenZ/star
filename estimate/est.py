@@ -22,14 +22,14 @@ simplefilter(action='ignore', category=FutureWarning)
 def pca(points, xref, yref):
     '''incipal component analysis (PCA) is used to estimate 
     the motion direction of star points.
-        
-    Args：
-        points: Star coordinates，shape = (2, n)
+
+    Args:
+        points: Star coordinates, shape = (2, n)
         xref: The x-coordinate of the upper left corner of the window.
         yref: The y-coordinate of the upper right corner of the window.
-    
+
     Returns:
-        The slope (k) and intercept (b) of the linear equation.
+        The slope (k) and intercept (b) of the linear equation. 
     '''
     # Transpose.
     data = points.T
@@ -50,14 +50,14 @@ def pca(points, xref, yref):
     # print('center =', yref + np.mean(points[0]), xref + np.mean(points[1]))
     # print('k =', k, 'b =', b)
 
-    # dx and dy are the x and y ranges，respectively.
-    # Used to set the limit of the first principal component（lower limit）.
+    # dx and dy are the x and y ranges, respectively.
+    # Used to set the limit of the first principal component (lower limit).
     dx = np.max(data[:, 0]) - np.min(data[:, 0])
     dy = np.max(data[:, 1]) - np.min(data[:, 1])
     # print(dx, dy, end = ' ')
     # print(pca.explained_variance_ratio_[0])
     
-    # limit: Minimun value of first principal compnent，which is in the 
+    # limit: Minimun value of first principal compnent, which is in the 
     # range of [0.9 - 0.99]
     # The shorter the star is, the smaller the requirement for 
     # the size of the first principal component is.
@@ -123,7 +123,7 @@ def Cluster(coordins):
     return groups
 
 def mean_value(values):
-    '''Calculate the mean value by nearest 80% values。
+    '''Calculate the mean value by nearest 80% values.
     
     Args: 
         values: The set that we need to calculate the mean value.
@@ -211,7 +211,7 @@ def Direction_estimate(image):
                 continue
             
             # Threshoulding.
-            thImg = threshold(window, 4) 
+            thImg = threshold(window, 5) 
             
             # Get the coordinates of positive points.
             points = np.array(np.where(thImg == 255))
@@ -231,7 +231,7 @@ def Direction_estimate(image):
                 window = image[i * winsize + dx: (i + 1) * winsize + dx,
                             j * winsize + dy: (j + 1) * winsize + dy]
                 # Threshoulding.
-                thImg = threshold(window, 4) 
+                thImg = threshold(window, 5) 
                 
                 # Get the coordinates of positive points.
                 points = np.array(np.where(thImg == 255))
@@ -287,7 +287,6 @@ def Direction_estimate(image):
     Theta = Theta[num: ]
     Intercept = Intercept[num: ]
     Linear = Linear[num: ]
-    # print(Theta)
     Res = []
     for i in range(len(Theta)):
         for j in range(i + 1, len(Theta)):
@@ -341,8 +340,8 @@ def Direction_estimate(image):
     S = np.linalg.inv(np.dot(A.T, A)).dot(A.T).dot(b)
     '''
 
-
-
+    return [1, 200000]
+    S[0], S[1] = image.shape[0] - S[1], S[0]
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     return S
 
@@ -405,9 +404,7 @@ def Direction_estimate(image):
             S = neg
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     # The least squares solution of overdetermined equations: AX = b
-    # X = (AᵀA)⁻¹Aᵀb
     # For y = kx + b => kx - y = -b
-    # A = [[k₁, -1], ..., [kᵢ, -1], ...]
     # b = [-b, ..., -b]
     # A = - np.ones((len(Theta), 2))
     # A[:, 0] = np.array(Theta)
@@ -453,7 +450,7 @@ def Direction_estimate(image):
         return 0
 
     # If it is greater than 10, it means that the motion direction of 
-    # the star point is about ±90, and the mean value requires special treatment.
+    # the star point is about -90~90, and the mean value requires special treatment.
     if np.mean(np.abs(Theta)) > 10: 
         res = np.arctan(Theta) * 180 / np.pi
         res = list(map(lambda x : x if x > 0 else 180 + x, res))

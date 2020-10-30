@@ -10,11 +10,13 @@ typedef unsigned char uint8;
 
 #define NTHREAD         8
 #define PI              3.1415926
-#define PERCENTAGE      0.005
+#define PERCENTAGE      0.01
 #define MIN_CONNECT     30
 #define MAX_SIZE        2048 * 2048
 #define KERNEL_SIZE     13
 #define EPS             1e-7
+#define MAX_COMNUM      1000
+#define MAX_PIXEL       1000
 
 int queue[MAX_SIZE];
 int front, back;
@@ -38,6 +40,12 @@ int queue_empty(){
 int queue_size(){
     return (back - front) / 2;
 }
+
+typedef struct{
+    int size[MAX_COMNUM];
+    int data[MAX_COMNUM][MAX_PIXEL][2];
+}ConnectComponent;
+ConnectComponent ccomponent;
 
 void conv(uint8 *src, int h, int w, int x0, int y0, uint8 *res, 
                                     double kernels[181][KERNEL_SIZE][KERNEL_SIZE]){
@@ -84,23 +92,38 @@ void conv_and_bin(uint8 *src, int h, int w, int x0, int y0, uint8 *res,
     /*
      * Calculate the cumulative distribution. 
      */
-    int* hist = (int*)malloc((256 + 1) * sizeof(int));
-    memset(hist, 0, sizeof(int) * (256 + 1));
+    // int* hist = (int*)malloc((256 + 1) * sizeof(int));
+    // memset(hist, 0, sizeof(int) * (256 + 1));
+    // for(int i = 0; i < h; ++i){
+    //     for(int j = 0; j < w; ++j){
+    //         hist[res[i * w + j]]++;
+    //     }
+    // }
+    // for(int i = 256; i >= 0; --i){
+    //     if(i != 256) hist[i] += hist[i + 1];
+    // }
+
+    // /*
+    //  * Calculate the threshold of binarization. 
+    //  */
+    // int thresh = 256;
+    // while(hist[thresh] < PERCENTAGE * h * w) thresh--;
+    int sum = 0, thresh = 256;
     for(int i = 0; i < h; ++i){
         for(int j = 0; j < w; ++j){
-            hist[res[i * w + j]]++;
+            sum += res[i * w + j];
         }
     }
-    for(int i = 256; i >= 0; --i){
-        if(i != 256) hist[i] += hist[i + 1];
+    int mean = sum / (h * w);
+    double var = 0.0;
+    for(int i = 0; i < h; ++i){
+        for(int j = 0; j < w; ++j){
+            var += ((res[i * w + j] - mean) * (res[i * w + j] - mean));
+        }
     }
-
-    /*
-     * Calculate the threshold of binarization. 
-     */
-    int thresh = 256;
-    while(hist[thresh] < PERCENTAGE * h * w) thresh--;
-
+    var /= (h * w);
+    printf("%lf\n", sqrt(var));
+    thresh = sum / (h * w) + (int)sqrt(var) * 4;
     // printf("%d\n", thresh);
 
     /*
@@ -159,5 +182,5 @@ void conv_and_bin(uint8 *src, int h, int w, int x0, int y0, uint8 *res,
         }
     }
 
-    free(hist);
+    // free(hist);
 }
