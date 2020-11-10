@@ -270,7 +270,7 @@ def Direction_estimate(image):
     # plt.figure()
     # plt.imshow(image, cmap = 'gray')
     # plt.show()
-    if len(Theta) == 0:
+    if len(Theta) < 2:
         return [99999, 99999]
 
     Theta = np.vstack((Theta, Intercept, Linear)).T
@@ -298,7 +298,11 @@ def Direction_estimate(image):
             y = k1 * x + b1
             # print(k1, b1, k2, b2, x, y)
             # Res.append([x, y, abs(b1 - b2)])
+            if np.linalg.norm([x - image.shape[0] // 2, y - image.shape[1] // 2]) > 5 * np.linalg.norm(image.shape):
+                if x > 0:
+                    x, y = -x, -y
             Res.append([x, y])
+
 
     # print(Res, sep='\n')
     Res = np.array(Res)
@@ -340,8 +344,8 @@ def Direction_estimate(image):
     S = np.linalg.inv(np.dot(A.T, A)).dot(A.T).dot(b)
     '''
 
-    return [1, 200000]
-    S[0], S[1] = image.shape[0] - S[1], S[0]
+    # S[0], S[1] = image.shape[0] - S[1], S[0]
+    S[0] = image.shape[0] - S[0]
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     return S
 
@@ -485,29 +489,20 @@ def get_std(predict):
     return np.std(predict)
 
 if __name__ == '__main__':
-    print('\n\n\n\n\n')
-    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
-    res = []
-    # for ms in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-    for dps in [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]:
-        print('-----------------------------------------------')
-        print('[Dps: {}]'.format(dps))
-        file_path = r'../graph/dynamic/round/{}dps'.format(dps)
-        images = os.listdir(file_path)
-        Center = []
-        for image in images:
-            if image[-3:] != 'png':
-                continue
-            print(image, end=' ')
-            src = cv2.imread(file_path + '\\' + image, 0)
-            blured = cv2.blur(src, (3, 3))
-            # blured = src
-            center =  Direction_estimate(blured)
-            Center.append(center)
-            print(center)
-        mse = get_mse([1024, 1024], Center)
-        # mse = get_std(Center)
-        print('mse: ', mse)
-        res.append(mse)
-    print(res)
+    file_path = r'./graph/'
+    images = os.listdir(file_path)
+    Center = []
+    for image in images:
+        if image[-3:] != 'png':
+            continue
+        src = cv2.imread(file_path + image, 0)
+        print(file_path + image)
+        print(src.shape)
+
+        blured = cv2.blur(src, (3, 3))
+        center =  Direction_estimate(blured)
+        Center.append(center)
+        print(center)
+    # mse = get_mse([1024, 1024], Center)
+    # mse = get_std(Center)
     

@@ -199,22 +199,27 @@ def extract(src, theta):
     Returns:
         Binarized image.
     '''
+
     kernels = []
     for alpha in range(-90, 91):
         kernels.append(get_kernel(13, 3, alpha))
 
     kernels = np.array(kernels).astype(np.float)
 
-    x0, y0 = int(theta[0]), int(theta[1])
+    # x0, y0 = c_double(theta[0]), c_double(theta[1])
+    x0, y0 = theta[0], theta[1]
+    cnt = c_int(int(0))
 
     res = np.zeros_like(src)
+    centers = np.zeros((1000, 2)).astype(np.float)
 
     # lib = npct.load_library("test",".")
     lib = cdll.LoadLibrary('./conv.so')
-    lib.conv_and_bin.argtypes = [npct.ndpointer(dtype=np.uint8, ndim=src.ndim, shape=src.shape, flags="C_CONTIGUOUS"),
-        c_int, c_int, c_int, c_int, npct.ndpointer(dtype=np.uint8, ndim=res.ndim, shape=res.shape, flags="C_CONTIGUOUS"),
-        npct.ndpointer(dtype=np.float, ndim=kernels.ndim, shape=kernels.shape, flags="C_CONTIGUOUS")]
-    
-    lib.conv_and_bin(src, c_int(src.shape[0]), c_int(src.shape[1]), c_int(x0), c_int(y0), res, kernels)
-    
-    return res
+    lib.conv_and_bin.argtypes= [npct.ndpointer(dtype=np.uint8, ndim=src.ndim, shape=src.shape, flags="C_CONTIGUOUS"),
+        c_int, c_int, c_double, c_double, npct.ndpointer(dtype=np.uint8, ndim=res.ndim, shape=res.shape, flags="C_CONTIGUOUS"),
+        npct.ndpointer(dtype=np.float, ndim=kernels.ndim, shape=kernels.shape, flags="C_CONTIGUOUS"),
+        npct.ndpointer(dtype=np.float, ndim=centers.ndim, shape=centers.shape, flags="C_CONTIGUOUS"),
+        POINTER(c_int)]
+
+    lib.conv_and_bin(src, c_int(src.shape[0]), c_int(src.shape[1]), c_double(x0), c_double(y0), res, kernels, centers, pointer(cnt))
+    return res, centers.copy(), cnt.value

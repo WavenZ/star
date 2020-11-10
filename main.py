@@ -5,8 +5,10 @@ import extract.extract as ex
 import generator.gen_dynamic as gd
 import cv2
 import os
+import time
 
 from cv2 import cv2
+
 
 def get_mse(real, predict):
     """Mean square error."""
@@ -15,29 +17,40 @@ def get_mse(real, predict):
 
 if __name__ == "__main__":
 
-    # file_path = r'./graph/dynamic/5dps/100ms/30/'
-    # file_path = r'../graph/dynamic/variable_dps/6dps'
-    # file_path = r'../graph/dynamic/fix60'
-
+    # file_path = r'/media/wavenz/新加卷/graph/dps{}/'.format(dps)
     file_path = r'./graph/'
-    images = os.listdir(file_path)
-    # print(images)
-    directions = []
-    for image in images:
-        print(image)
-        src = cv2.imread(file_path + '/' + image, 0)
-        print(src.shape)
-        src = cv2.blur(src, (3, 3))
-        # theta = ae.Direction_estimate(src)
-        theta = [1000000, 1730000]
-        print(theta)
-        retImg = ex.extract(src, theta)
-        plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
 
+    images = os.listdir(file_path)
+    for image in images:
+        if image[-4:] != '.png':
+            continue
+        # print(image)
+        src = cv2.imread(file_path + image, 0)
+        src = cv2.blur(src, (3, 3))
+        theta = ae.Direction_estimate(src)
+        theta = [100000000, 173000000]
+        retImg, centers, cnt = ex.extract(src.copy(), theta)
+        print(image, theta, cnt)
+        
+        # # plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
+        # reals = np.load(file_path + '{}.npy'.format(image[:-4]))
+        # # print('{}.npy'.format(image[:-4]))
+        # centers = centers[:cnt]
+
+        # valid, total = 0, reals.shape[0]
+        # for center in centers:
+        #     for real in reals:
+        #         if np.linalg.norm((center - real)) < 5:
+        #             # print(center, real, np.linalg.norm((center - real)))
+        #             valid+=1
+        #             break
+
+
+        # print('Result: {}/{}'.format(valid, total))
         plt.figure()
         plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
         plt.show()
-        # plt.imsave('./graph/{}_extract.png'.format(image), np.hstack((src, retImg)), cmap = 'gray', vmin = 0, vmax = 255)
+        plt.imsave('./bbb.png'.format(image), retImg, cmap = 'gray', vmin = 0, vmax = 255)
         # # print(image, direction)
         # directions.append(direction)
     # print('Res: ', np.array(directions))
@@ -62,4 +75,4 @@ if __name__ == "__main__":
     # print('[starnum]:', starnum)
     # plt.figure()
     # plt.imshow(img, cmap='gray', )
-    # plt.show()
+    # plt.show()e
