@@ -26,7 +26,7 @@ if __name__ == "__main__":
     rot_center = ae.Direction_estimate(src)
     print('rot_center:', rot_center)
 
-    # 星点提取
+    # 星点提取、质心定位
     retImg, centers, cnt = ex.extract(src.copy(), rot_center)
     centers = centers[:cnt]
 
