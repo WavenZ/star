@@ -30,8 +30,19 @@ if __name__ == "__main__":
         theta = ae.Direction_estimate(src)
         theta = [100000000, 173000000]
         retImg, centers, cnt = ex.extract(src.copy(), theta)
-        print(image, theta, cnt)
-        
+        # plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
+        reals = np.load(file_path + '/' + '{}.npy'.format(image[:-4]))
+        # print('{}.npy'.format(image[:-4]))
+        centers = centers[:cnt]
+
+        valid, total = 0, reals.shape[0]
+        for center in centers:
+            for real in reals:
+                if np.linalg.norm((center - real)) < 5:
+                    # print(center, real, np.linalg.norm((center - real)))
+                    valid+=1
+                    break
+        print('{}/{}'.format(valid, total))
         # # plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
         # reals = np.load(file_path + '{}.npy'.format(image[:-4]))
         # # print('{}.npy'.format(image[:-4]))

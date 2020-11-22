@@ -34,15 +34,16 @@ if __name__ == "__main__":
         images = os.listdir(file_path)
         # print(images)
         sum_valid, sum_total = 0, 0
-        for image in images[:200]:
+        for image in images[:1000]:
             if image[-4:] != '.png':
                 continue
             # print(image)
             src = cv2.imread(file_path + '/' + image, 0)
             # print(src.shape)
             src = cv2.blur(src, (3, 3))
-            theta = ae.Direction_estimate(src)
-            # theta = [99999, 99999]
+            # theta = ae.Direction_estimate(src)
+            theta = [99999, 99999]
+            # theta = [10000000, 17300000]
             retImg, centers, cnt = ex.extract(src.copy(), theta)
             
             # plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
@@ -62,7 +63,7 @@ if __name__ == "__main__":
             # print(centers)
             # print(reals)
             curr+=1
-            log.write('[{:3}/{} \'{}\'   case: {:2}/{:2} = {:.2f}   total: {}/{} = {:.3f}]\n'.format(curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
+            log.write('[{:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.3f}]\n'.format(curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
         print('[Param = {}   total: {}/{} = {:.3f}]'.format(param, sum_valid, sum_total, sum_valid / sum_total))
             # plt.figure()
             # plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)

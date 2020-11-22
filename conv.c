@@ -13,7 +13,6 @@ typedef unsigned char uint8;
 
 #define NTHREAD         8
 #define PI              3.1415926
-#define PERCENTAGE      0.01
 #define MIN_CONNECT     30
 #define MAX_SIZE        2048 * 2048
 #define KERNEL_SIZE     13
@@ -21,6 +20,7 @@ typedef unsigned char uint8;
 #define MAX_COMNUM      200000
 #define MAX_PIXEL       1000
 
+/* Queue for bfs. */
 int queue[MAX_SIZE];
 int front, back;
 
@@ -44,11 +44,16 @@ int queue_size(){
     return (back - front) / 2;
 }
 
-int size[MAX_COMNUM];
-int point[MAX_COMNUM][MAX_PIXEL][2];
-int endpoint[MAX_COMNUM][2][2];
+int maxlen;
+int size[MAX_COMNUM];                   // Size of each domain.
+int mean[MAX_COMNUM];                   // Mean gray value of each domain.
+int point[MAX_COMNUM][MAX_PIXEL][2];    // Coordinates of each domain.
+int endpoint[MAX_COMNUM][2][2];         // Endpoints of each domain.
 
 void push_back(int index, int x, int y){
+    /*
+     * Add coodinates to doamin.
+     */
     point[index][size[index]][0] = x;
     point[index][size[index]][1] = y;
     size[index]++;
@@ -57,11 +62,19 @@ int get_size(int index){
     return size[index];
 }
 void clear(){
+    /* 
+     * Clear some global variables.
+     */
+    maxlen = 0;
+    memset(mean, 0, sizeof(int) * MAX_COMNUM);
     memset(size, 0, sizeof(int) * MAX_COMNUM);
     memset(endpoint, 0, sizeof(int) * MAX_COMNUM * 2 * 2);
 }
 
 void update_endpoint(int index){
+    /*
+     * Update the endpoints of the giving domain.
+     */
     int minx = 0x7fffffff, miny = 0x7fffffff, maxx = -1, maxy = -1;
     for(int i = 0; i < size[index]; ++i){
         minx = min(minx, point[index][i][0]);
@@ -93,39 +106,45 @@ void update_endpoint(int index){
             }
         }
     }
+    maxlen = max(maxlen, sqrt(dx * dx + dy * dy));
+    // printf("maxlen = %d\n", maxlen);
 }
 
 int get_distance(int x0, int y0, int x1, int y1){
+    /*
+     * Get distance of (x0, y0) to (x1, y1).
+     */
     return sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1));
 }
 
 double point_line(int x, int y, double k, double b){
+    /*
+     * Get distance of (x, y) to y = kx + b.
+     */
     return fabs(k * x - y + b) * 1.0 / sqrt(k * k + 1);
 }
 
 int merge(int p, int q, uint8 *res, int w, int cx, int cy){
-    if((endpoint[p][0][0] + endpoint[p][0][1] + endpoint[p][1][0] 
-            + endpoint[p][1][1]) == 0)
-        update_endpoint(p);
-    if((endpoint[q][0][0] + endpoint[q][0][1] + endpoint[q][1][0] 
-            + endpoint[q][1][1]) == 0)
-        update_endpoint(q);
-    
+    /*
+     * Try two merge two domains.
+     */
 
-    int dis = 0x7fffffff;
+    /* Calc minimun distance */
+    int mindis = 0x7fffffff, maxdis = 0;
     for(int i = 0; i <= 1; ++i){
         for(int j = 0; j <= 1; ++j){
-            dis = min(dis, get_distance(endpoint[p][i][0], endpoint[p][i][1],
-                                endpoint[q][j][0], endpoint[q][j][1]));
+            int dis = get_distance(endpoint[p][i][0], endpoint[p][i][1], endpoint[q][j][0], endpoint[q][j][1]);
+            mindis = min(mindis, dis);
+            maxdis = max(maxdis, dis);
         }
     }
-    if(dis > 25){
+    /* Return if distance dissatisfy. */
+    if(mindis > 50 || maxdis > maxlen * 1.5){
         return 0;
     }
-    // printf("dis = %d  %d, %d\n", dis, endpoint[p][0][0], endpoint[p][0][1]);
-    // printf("(%d, %d) + (%d, %d)", endpoint[p][0][0], endpoint[p][0][1],
-    //                             endpoint[q][0][0], endpoint[q][0][1]);
-    int x0, y0, x1, y1;
+
+    /* Get Le. */
+    int x0, y0, x1, y1, dis = mindis;
     for(int i = 0; i <= 1; ++i){
         for(int j = 0; j <= 1; ++j){
             int temp = get_distance(endpoint[p][i][0], endpoint[p][i][1],
@@ -142,18 +161,16 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
     double k = (x1 == x0) ? 9999.9999 : ((y1 - y0) * 1.0 / (x1 - x0));
     double b = y1 - k * x1;
 
-
-    // printf("(%d, %d) (%d, %d)  y = %lfx + %lf\n", x0, y0, x1, y1, k, b);
+    /* Calc the gap. */
     double gap = point_line(endpoint[p][0][0], endpoint[p][0][1], k, b) + 
                 point_line(endpoint[p][1][0], endpoint[p][1][1], k, b) + 
                 point_line(endpoint[q][0][0], endpoint[q][0][1], k, b) +
                 point_line(endpoint[q][1][0], endpoint[q][1][1], k, b);
-    // printf("%lf    %d,%d + %d,%d\n", gap, endpoint[p][0][0], endpoint[p][0][1], 
-    //                                       endpoint[q][0][0], endpoint[q][0][1]);
     if(gap > 3.14){
-        // printf("   fail.\n");
         return 0;
     }
+
+    /* Get the center of each part. */
     double cx0 = 0, cy0 = 0, cx1 = 0, cy1 = 0;
     for(int i = 0; i < size[p]; ++i){
         cx0 += point[p][i][0];
@@ -168,7 +185,7 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
     cx1 = cx1 / size[q];
     cy1 = cy1 / size[q];
 
-    // printf("conter: (%lf, %lf) (%lf, %lf)\n", cx0, cy0, cx1, cy1);
+    /* The line that goes through two centers. */
     k = (cx1 == cx0) ? 9999.9999 : ((cy1 - cy0) * 1.0 / (cx1 - cx0));
     b = cy1 - k * cx1;
 
@@ -178,7 +195,7 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
         return 0;
     }     
 
-
+    /* Get the max distance to Lc. */
     int dx = max(max(endpoint[p][0][0], endpoint[p][1][0]),
                     max(endpoint[q][0][0], endpoint[q][1][0])) - 
              min(min(endpoint[p][0][0], endpoint[p][1][0]),
@@ -189,14 +206,15 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
                     min(endpoint[q][0][1], endpoint[q][1][1]));
     // printf("%d %d\n", dx, dy);
 
-    double maxdis = 0.0;
+    double maxwidth = 0.0;
     for(int i = 0; i < size[p]; ++i){
-        maxdis = max(maxdis, point_line(point[p][i][0], point[p][i][1], k, b));
+        maxwidth = max(maxwidth, point_line(point[p][i][0], point[p][i][1], k, b));
     }
     for(int i = 0; i < size[q]; ++i){
-        maxdis = max(maxdis, point_line(point[q][i][0], point[q][i][1], k, b));
+        maxwidth = max(maxwidth, point_line(point[q][i][0], point[q][i][1], k, b));
     }
 
+    /* Merge two domains and fix the star. */
     if(dx > dy){
         int up = min(cx0, cx1);
         int down = max(cx0, cx1);
@@ -204,7 +222,7 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
         for(int i = up; i <= down; ++i){
             int mid = k * i + b + 0.5;
             for(int j = mid - 5; j <= mid + 5; ++j){
-                if(res[i * w + j] != 255 && point_line(i, j, k, b) < maxdis){
+                if(res[i * w + j] != 255 && point_line(i, j, k, b) < maxwidth){
                     res[i * w + j] = 150;
                     push_back(q, i, j);
                 }
@@ -217,13 +235,14 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
         for(int j = left; j <= right; ++j){
             int mid = (j - b) / k + 0.5;
             for(int i = mid - 5; i <= mid + 5; ++i){
-                if(res[i * w + j] != 255 && point_line(i, j, k, b) < maxdis){
+                if(res[i * w + j] != 255 && point_line(i, j, k, b) < maxwidth){
                     res[i * w + j] = 150;
                     push_back(q, i, j);
                 }
             }
         }        
     }
+    /* Merge domain p to dimain q. */
     for(int i = 0; i < size[p]; ++i){
         push_back(q, point[p][i][0], point[p][i][1]);
     }
@@ -278,39 +297,21 @@ void conv(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
 
 void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res, 
                                     double kernels[181][KERNEL_SIZE][KERNEL_SIZE],
-                                    double centers[1000][2], int* ccnt){
-    /*
-        Convolution and binarization.
-    */
+                                    double centers[1000][3], int* ccnt){
+
     // printf("\033[1m\033[;33m[call conv() in conv.dll ...]\033[0m\n");
     // printf("\033[1m\033[;33m[(h, w) = (%d, %d) (x0, y0) = (%.2lf, .%2lf)]\033[0m\n", h, w, x0, y0);
     
-
-    conv(src, h, w, x0, y0, res, kernels);
+    /* Clear some global variable. */
     clear();
 
+    /* Convolution and binarization. */
+    conv(src, h, w, x0, y0, res, kernels);
 
-    /*
-     * Calculate the cumulative distribution. 
-     */
-    // int* hist = (int*)malloc((256 + 1) * sizeof(int));
-    // memset(hist, 0, sizeof(int) * (256 + 1));
-    // for(int i = 0; i < h; ++i){
-    //     for(int j = 0; j < w; ++j){
-    //         hist[res[i * w + j]]++;
-    //     }
-    // }
-    // for(int i = 256; i >= 0; --i){
-    //     if(i != 256) hist[i] += hist[i + 1];
-    // }
-
-    // /*
-    //  * Calculate the threshold of binarization. 
-    //  */
-    // int thresh = 256;
-    // while(hist[thresh] < PERCENTAGE * h * w) thresh--;
+    /* Calculate the threshold of binarization. */
     int thresh = 256;
     int pos[4][2] = {{16, 0}, {16, 256}, {16, 512}, {16, 1024}};
+    #pragma omp parallel for num_threads(NTHREAD)
     for(int k = 0; k < 4; ++k){
         int sum = 0;
         for(int i = pos[k][0]; i < pos[k][0] + 128; ++i){
@@ -329,66 +330,16 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
         thresh = min(thresh, (int)(mean + sqrt(var) * 5));
     }
 
-
-    // thresh = 20;
-    /*
-     * Binarization.
-     */
+    /* Binarization. */
+    #pragma omp parallel for num_threads(NTHREAD)
     for(int i = 0; i < h; ++i){
         for(int j = 0; j < w; ++j){
             res[i * w + j] = (res[i * w + j] > thresh) ? 254 : 0;
         }
     }
-    return;
 
-    /*
-     * Connected component analysis.
-     */
-    // for(int i = KERNEL_SIZE / 2; i < h - KERNEL_SIZE / 2; ++i){
-    //     for(int j = KERNEL_SIZE / 2; j < w - KERNEL_SIZE / 2; ++j){
-    //         if(res[i * w + j] == 255){
-    //             int cnt = 1;
-    //             queue_clear();
-    //             res[i * w + j] = 255;
-    //             queue_push(i, j);
-    //             int x, y;
-    //             while(!queue_empty()){
-    //                 for(int k = queue_size(); k > 0; --k){
-    //                     queue_pop(&x, &y);
-    //                     for(int dx = -1; dx <= 1; ++dx){
-    //                         for(int dy = -1; dy <= 1; ++dy){
-    //                             if(res[(x + dx) * w + y + dy] == 255){
-    //                                 res[(x + dx) * w + y + dy] = 255;
-    //                                 queue_push(x + dx, y + dy);
-    //                                 cnt++;
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //             if(cnt < MIN_CONNECT){  // Delete small connected blocks.
-    //                 queue_clear();
-    //                 res[i * w + j] = 0;
-    //                 queue_push(i, j);
-    //                 while(!queue_empty()){
-    //                     for(int k = queue_size(); k > 0; --k){
-    //                         queue_pop(&x, &y);
-    //                         for(int dx = -1; dx <= 1; ++dx){
-    //                             for(int dy = -1; dy <= 1; ++dy){
-    //                                 if(res[(x + dx) * w + y + dy] == 255){
-    //                                     res[(x + dx) * w + y + dy] = 0;
-    //                                     queue_push(x + dx, y + dy);
-    //                                 }
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    /* Get connected domain by bfs method. */ 
     int cnt = 0;
-    // printf("%d\n", queue_empty());
     for(int i = KERNEL_SIZE / 2; i < h - KERNEL_SIZE / 2; ++i){
         for(int j = KERNEL_SIZE / 2; j < w - KERNEL_SIZE / 2; ++j){
             if(res[i * w + j] == 254){
@@ -410,8 +361,7 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
                         }
                     }
                 }
-                // printf("%d ", get_size(cnt));
-                // printf("%d, %d\n", cnt, size[cnt]);
+                /* Clear small domains. */
                 if(size[cnt] < 20){
                     for(int i = 0; i < size[cnt]; ++i){
                         res[point[cnt][i][0] * w + point[cnt][i][1]] = 0;
@@ -423,23 +373,39 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
         }
     } 
 
+    /* Connected domain analysis and star fix. */
+    if(fabs(x0 - 99999) + fabs(y0 - 99999) > EPS){
+        
+        /* Update endpoints of each domain. */
+        for(int i = 0; i < cnt; ++i){
+            if(size[i] <= 10) continue;
+            int temp = 0;
+            for(int j = 0;j < size[i]; ++j){
+                temp += src[point[i][j][0] * w + point[i][j][1]];
+            }
+            mean[i] = temp / size[i];
+            update_endpoint(i);
+        }
 
-
-    int merge_cnt = 0;
-    for(int i = 0; i < cnt; ++i){
-        // if(merge_cnt == 5) break;
-        if(size[i] <= 10) continue;
-        for(int j = i + 1; j < cnt; ++j){
+        /* Try to merge domain */
+        int merge_cnt = 0;   // Successfully merged counter.
+        for(int i = 0; i < cnt; ++i){
             // if(merge_cnt == 5) break;
-            if(size[j] <= 10) continue;
-            if(merge(i, j, res, w, x0, y0)){
-                merge_cnt++;
-                break;
+            if(size[i] <= 10 || mean[i] > thresh) continue;
+            for(int j = i + 1; j < cnt; ++j){
+                // if(merge_cnt == 5) break;
+                if(size[j] <= 10 || mean[j] > thresh) continue;
+                if(merge(i, j, res, w, x0, y0)){
+                    merge_cnt++;
+                    break;
+                }
             }
         }
-    }
-    // printf("%d\n", merge_cnt);
+        // printf("%d\n", merge_cnt);
 
+    }
+
+    /* Clear small domains after the merge. */
     for(int i = 0; i < cnt; ++i){
         if(size[i] <= 50){
             for(int j = 0; j < size[i]; ++j){
@@ -452,26 +418,30 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
             }
         }
     }
-    // printf("\n");
+    
+
+    /* Update the center of each star. */
     *ccnt = 0;
     for(int i = 0; i < cnt; ++i){
         if(size[i] > 0){
-            double cx = 0, cy = 0;
+            double cx = 0, cy = 0, gray = 0.0;
             for(int j = 0; j < size[i]; ++j){
                 cx += point[i][j][0];
                 cy += point[i][j][1];
+                gray += src[point[i][j][0] * w + point[i][j][1]];
             }
+            
             cx /= size[i];
             cy /= size[i];
-            centers[*ccnt][0] = cx;
-            centers[*ccnt][1] = cy;
+            gray /= size[i];
+            centers[*ccnt][0] = cy;
+            centers[*ccnt][1] = cx;
+            centers[*ccnt][2] = gray;
             (*ccnt)++;
-            res[(int)(cx + 0.5) * w + (int)(cy + 0.5)] = 255;
+            res[(int)(cx + 0.5) * w + (int)(cy + 0.5)] = 0;
             // printf("(%lf, %lf) ", cx, cy);
         }
     }
     // printf("\n");
     // printf("\033[1m\033[;33m[Total stars: %d]\033[0m\n", *ccnt);
-
-    // free(hist);
 }

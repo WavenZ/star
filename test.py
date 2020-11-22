@@ -1,73 +1,42 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import estimate.est as ae
+import extract.extract as ex
+import generator.gen_dynamic as gd
+import identifier.pyramid as ip
 import cv2
+import os
+import time
 
 from cv2 import cv2
 
+def get_mse(real, predict):
+    """Mean square error."""
+
+    return sum([(pred - real) ** 2 for pred in predict]) / len(predict)
+
 if __name__ == "__main__":
 
-    plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
-    plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
-    # y1 = np.array([[34.21101646, 30.62484186], 
-    #                 [9.9741075,  11.93156095],
-    #                 [4.93469192, 6.50547724],
-    #                 [3.13355196, 3.89910064], 
-    #                 [1.69171271, 2.65963118],
-    #                 [1.40293031, 2.48512765], 
-    #                 [1.29675331, 2.80221985], 
-    #                 [1.06578332, 2.12047665],
-    #                 [1.26215376, 2.24628645],
-    #                 [0.90971327, 2.96893019],
-    #                 [0.9872991,  1.96481357]] )
-    # y2 = np.array([[196.88979146, 440.04154334],
-    #                 [97.1058719,  154.84369687],
-    #                 [102.10942174, 119.54363543],
-    #                 [26.71368261, 95.67408188],
-    #                 [23.74632281, 41.32492529],
-    #                 [14.89004322, 19.02805942],
-    #                 [12.74851751, 31.90940675],
-    #                 [17.15390605, 22.48118942],
-    #                 [6.14760861, 13.25526315],
-    #                 [4.48526948, 27.66525789],
-    #                 [20.24664135, 30.12725922]])
-    # y1 = np.array([
-    #                 # [6001.43404166, 15700.47485941],
-    #                 [89.36114674, 85.73904396],
-    #                 [19.96370553, 30.75395861],
-    #                 [12.31703053, 12.2528512],
-    #                 [5.33390153, 4.59705709],
-    #                 [3.42426751, 4.34363764],
-    #                 [1.68258761, 3.00570226],
-    #                 [1.85808685, 2.67472436],
-    #                 [1.09927684, 2.18178575],
-    #                 [0.96404738, 1.77036157]
-    # ])
-    # y2 = np.array([
-    #                 # [6012.37297844, 16399.91772302],
-    #                 [292.25966589, 1534.80043332],
-    #                 [90.53912223, 1438.26304627],
-    #                 [54.35746527, 106.54414141],
-    #                 [24.21807665, 68.49123572],
-    #                 [32.73367242, 39.5943747 ],
-    #                 [14.56691877, 97.14162179],
-    #                 [10.2347949,  17.59687345],
-    #                 [5.27946856, 11.69905401],
-    #                 [4.95695897, 14.11913224]
-    # ])
-    # y1 = np.sum(y1, 1)
-    # y2 = np.sum(y2, 1)
-    y1 = np.array([0.986, 0.969, 0.745, 0.538, 0.418, 0.333, 0.271, 0.232, 0.207, 0.182, 0.161])
-    y2 = np.array([0.960, 0.960, 0.953, 0.942, 0.930, 0.916, 0.881, 0.822, 0.727, 0.649, 0.571])
-    y3 = np.array([0.957 ,0.950, 0.941, 0.931, 0.922, 0.910, 0.893, 0.872, 0.820, 0.767, 0.695])
-    x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    # 读文件
+    filename = r'./graph/10_5.png'
+    src = cv2.imread(filename, 0)
+    
+    # 估计旋转中心
+    src = cv2.blur(src, (3, 3))
+    rot_center = ae.Direction_estimate(src)
+    print('rot_center:', rot_center)
+
+    # 星点提取
+    retImg, centers, cnt = ex.extract(src.copy(), rot_center)
+    centers = centers[:cnt]
+
+    # 星图识别、姿态解算
+    centers[:, 1] += 1024
+    res = ip.identify(centers)[-1] * 180 / np.pi
+    print('attitude:', res)
+    
+    # 重投影
+    retImg = ip.reProjection(retImg, res, [1024, 1024, 0.0055, 0.0055, 25.5])
     plt.figure()
-    plt.plot(x, y1, 'x-', linewidth=0.5, label='原始方法')
-    # plt.plot(x, y1)
-    plt.plot(x, y2, '^-', linewidth=0.5, label='本文算法')
-    plt.plot(x, y3, 'o-', linewidth=0.5, label='本文算法+优化')
-    plt.xlabel('角速度（°/s）')
-    plt.ylabel('均方根误差（pixel）')
-    plt.legend()
-    plt.ylim((0, 1))
-    # plt.plot(x, y2)
+    plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
     plt.show()

@@ -34,7 +34,7 @@ if __name__ == "__main__":
         images = os.listdir(file_path)
         # print(images)
         sum_valid, sum_total = 0, 0
-        for image in images[:200]:
+        for image in images:
             if image[-4:] != '.png':
                 continue
             src = cv2.imread(file_path + '/' + image, 0)
@@ -42,6 +42,7 @@ if __name__ == "__main__":
             src = cv2.blur(src, (3, 3))
             # theta = ae.Direction_estimate(src)
             theta = [100000000, 173000000]
+            # theta = [99999, 99999]
             # print(theta)
             retImg, centers, cnt = ex.extract(src.copy(), theta)
             
@@ -62,8 +63,8 @@ if __name__ == "__main__":
             # print(centers)
             # print(reals)
             curr+=1
-            log.write('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.2f}   total: {}/{} = {:.2f}]\n'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
-            print('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.2f}]'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
+            log.write('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.3f}]\n'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
+            # print('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.2f}]'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
             # plt.figure()
             # plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
             # plt.show()

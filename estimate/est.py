@@ -216,7 +216,11 @@ def Direction_estimate(image):
             # Get the coordinates of positive points.
             points = np.array(np.where(thImg == 255))
 
+
             # Skip while the distribution is too scattered.
+            # if points.shape[0] > 0.1 * winsize * winsize:
+            #     continue
+
             if np.std(points[0]) + np.std(points[1]) > 30: 
                 continue
             # print(i, j, np.std(points[0]) + np.std(points[1]))
@@ -272,9 +276,9 @@ def Direction_estimate(image):
     # plt.show()
     if len(Theta) < 2:
         return [99999, 99999]
+    # print(Theta)
 
     Theta = np.vstack((Theta, Intercept, Linear)).T
-    # print(Theta)
 
     Theta = np.array(sorted(Theta, key=lambda x: x[2]))
     # print(Theta)
@@ -303,7 +307,7 @@ def Direction_estimate(image):
                     x, y = -x, -y
             Res.append([x, y])
 
-
+    # print(Res)
     # print(Res, sep='\n')
     Res = np.array(Res)
     Use = Res

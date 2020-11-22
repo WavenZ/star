@@ -211,7 +211,7 @@ def extract(src, theta):
     cnt = c_int(int(0))
 
     res = np.zeros_like(src)
-    centers = np.zeros((1000, 2)).astype(np.float)
+    centers = np.zeros((1000, 3)).astype(np.float)
 
     # lib = npct.load_library("test",".")
     lib = cdll.LoadLibrary('./conv.so')
