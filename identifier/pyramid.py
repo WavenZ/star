@@ -156,17 +156,17 @@ def quest(ww_cal, vv_cal):
     current_att[2, 2] = - qout[0] * qout[0] - qout[1] * qout[1] + qout[2] * qout[2] + qout[3] * qout[3]
 
     # 姿态矩阵转欧拉角
-    ra = np.arctan2(current_att[2, 1], current_att[2, 0])
-    dec = np.arcsin(current_att[2, 2])
+    pitch = np.arctan2(current_att[2, 1], current_att[2, 0])
+    yaw = np.arcsin(current_att[2, 2])
     roll = np.arctan2(current_att[0, 2], current_att[1, 2])
 
     if current_att[2, 0] < 0:
-        ra += np.pi
+        pitch += np.pi
 
     if current_att[2, 0] > 0 and current_att[2, 1] < 0:
-        ra += 2 * np.pi
+        pitch += 2 * np.pi
 
-    return (np.array([ra, dec, roll]), qout)
+    return (np.array([pitch, yaw, roll]), qout)
 
 def quaternion_to_rotation_matrix(quat):
     q = quat.copy()
@@ -355,7 +355,7 @@ def pyramid(centers_origin, params, err, match_min, catalog, pairs_catalog, grou
 def reProjection(src, attitude, params):
 
     # 读星库
-    sao60 = np.loadtxt('./params/sao60.txt', dtype = float)
+    catalog = np.loadtxt('./params/sao60.txt', dtype = float)
 
     # 各项参数
     h, w = 2048, 2048
@@ -363,62 +363,62 @@ def reProjection(src, attitude, params):
     f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
 
     # 角度转换为弧度制
-    ra, dec, rol = np.array(attitude) * np.pi / 180
+    pitch, yaw, roll = np.array(attitude) * np.pi / 180
 
     # 姿态转换矩阵：天球坐标系 -> 星敏感器坐标系
-    r11 = - np.cos(rol) * np.sin(ra) - np.sin(rol) * np.sin(dec) * np.cos(ra)
-    r12 = np.cos(rol) * np.cos(ra) - np.sin(rol) * np.sin(dec) * np.sin(ra)
-    r13 = np.sin(rol) * np.cos(dec)
-    r21 = np.sin(rol) * np.sin(ra) - np.cos(rol) * np.sin(dec) * np.cos(ra)
-    r22 = - np.sin(rol) * np.cos(ra) - np.cos(rol) * np.sin(dec) * np.sin(ra)
-    r23 = np.cos(rol) * np.cos(dec)
-    r31 = np.cos(dec) * np.cos(ra)
-    r32 = np.cos(dec) * np.sin(ra)
-    r33 = np.sin(dec)
+    r11 = - np.cos(roll) * np.sin(pitch) - np.sin(roll) * np.sin(yaw) * np.cos(pitch)
+    r12 = np.cos(roll) * np.cos(pitch) - np.sin(roll) * np.sin(yaw) * np.sin(pitch)
+    r13 = np.sin(roll) * np.cos(yaw)
+    r21 = np.sin(roll) * np.sin(pitch) - np.cos(roll) * np.sin(yaw) * np.cos(pitch)
+    r22 = - np.sin(roll) * np.cos(pitch) - np.cos(roll) * np.sin(yaw) * np.sin(pitch)
+    r23 = np.cos(roll) * np.cos(yaw)
+    r31 = np.cos(yaw) * np.cos(pitch)
+    r32 = np.cos(yaw) * np.sin(pitch)
+    r33 = np.sin(yaw)
 
-    Rbc = np.array([[r11, r12, r13], 
+    R = np.array([[r11, r12, r13], 
                     [r21, r22, r23], 
                     [r31, r32, r33]])
     
-    # 姿态转换矩阵：星敏感器坐标系 -> 天球坐标系
-    Rcb = Rbc.T
-
     # 视轴指向
-    S = Rcb.dot(np.array([0, 0, 1]).T)
+    S = R.T.dot(np.array([0, 0, 1]).T)
 
     # 所有星点的天球坐标系下的坐标
-    allStar = sao60[:, 1: 4]
+    allStar = catalog[:, 1: 4]
 
     # 所有星点方向与视轴方向的夹角
     allDist = np.arccos(allStar.dot(S))
 
     # 将天球坐标系转换到星敏感器坐标系
-    allStar = Rbc.dot(allStar.T)
+    allStar = R.dot(allStar.T)
 
     # 过滤出投影在图像中的星点并保存其相关信息
     cnt = 0
-
-    starInSky = np.zeros((500, 7))
-    for i in range(sao60.shape[0]):
+    stars = np.zeros((500, 7))
+    for i in range(catalog.shape[0]):
+        # 过滤与视轴夹角较大的恒星
         if allDist[i] < 0.75 * fov * np.pi / 180:
+            # 取出该星点
             star = allStar[:, i]
-            x = - f * star[0] / star[2] / dx + cx
-            y = - f * star[1] / star[2] / dy + cy - 1024
+            # 计算投影在图像平面的坐标
+            x = - f * (star[0] / star[2]) / dx + cx
+            y = - f * (star[1] / star[2]) / dy + cy - 1024
+            # 筛选落在图像中的星保存到 stars 中
             if x > 0 and x < src.shape[1] and y > 0 and y < src.shape[0]:
-                starInSky[cnt, :5] = sao60[i, :5]
-                starInSky[cnt, 5:] = [x, y]
+                stars[cnt, :5] = catalog[i, :5]
+                stars[cnt, 5:] = [x, y]
                 cnt += 1
-    starInSky = starInSky[:cnt, :]
+    stars = stars[:cnt, :]
   
     # 建立图像
-    resImg = Image.fromarray(src)
-    font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf', 24)
+    resImg = Image.fromarray(src).convert('RGB')
+    font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf', 20)
     anno = ImageDraw.Draw(resImg)
     
     # 画星点和标注星等信息
-    for star in starInSky:
-        anno.ellipse((star[5] - 6, star[6] - 6, star[5] + 6, star[6] + 6), fill = 'white')
-        anno.text((star[5] + 10, star[6] + 10), '{:.2f}'.format(star[4]), font = font, fill = 'white')
+    for star in stars:
+        anno.ellipse((star[5] - 4, star[6] - 4, star[5] + 4, star[6] + 4), fill = 'red')
+        anno.text((star[5] + 10, star[6] + 10), '{:.2f}'.format(star[4]), font = font, fill = 'red')
         
     resImg = np.array(resImg)
 

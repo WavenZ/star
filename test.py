@@ -36,7 +36,7 @@ if __name__ == "__main__":
     print('attitude:', res)
     
     # 重投影
-    retImg = ip.reProjection(retImg, res, [1024, 1024, 0.0055, 0.0055, 25.5])
+    retImg = ip.reProjection(retImg, res, [1024, 1024, 0.0055, 0.0055, 25.45])
     plt.figure()
-    plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
+    plt.imshow(retImg)
     plt.show()

@@ -33,7 +33,7 @@ def put_stars(img, x0, y0, E, delta = 1.3, winvisible = False, winradius = 50):
 def genStatic(attitude):
 
     # 读星库
-    sao60 = np.loadtxt('sao60.txt', dtype = float)
+    catalog = np.loadtxt('./params/sao60.txt', dtype = float)
 
     # 各项参数
     h, w = 2048, 2048
@@ -55,19 +55,17 @@ def genStatic(attitude):
     r33 = np.sin(dec)
 
     Rbc = np.array([[r11, r12, r13], 
-                    [r21, r22, r23], 
+                    [r21, r22, r23],
                     [r31, r32, r33]])
     
     # 姿态转换矩阵：星敏感器坐标系 -> 天球坐标系
     Rcb = Rbc.T
 
-    print(f)
-
     # 视轴指向
     S = Rcb.dot(np.array([0, 0, 1]).T)
 
     # 所有星点的天球坐标系下的坐标
-    allStar = sao60[:, 1: 4]
+    allStar = catalog[:, 1: 4]
 
     # 所有星点方向与视轴方向的夹角
     allDist = np.arccos(allStar.dot(S))
@@ -78,13 +76,13 @@ def genStatic(attitude):
     # 过滤出投影在图像中的星点并保存其相关信息
     cnt = 0
     starInSky = np.zeros((500, 7))
-    for i in range(sao60.shape[0]):
+    for i in range(catalog.shape[0]):
         if allDist[i] < 0.75 * fov * np.pi / 180:
             star = allStar[:, i]
             x = - f * star[0] / star[2] / dx + cx
             y = - f * star[1] / star[2] / dy + cy
             if x > 0 and x < h and y > 0 and y < w:
-                starInSky[cnt, :5] = sao60[i, :5]
+                starInSky[cnt, :5] = catalog[i, :5]
                 starInSky[cnt, 5:] = [x, y]
                 cnt += 1
     starInSky = starInSky[:cnt, :]
