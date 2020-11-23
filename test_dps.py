@@ -20,7 +20,7 @@ if __name__ == "__main__":
     # file_path = r'../graph/dynamic/variable_dps/6dps'
     # file_path = r'../graph/dynamic/fix60'
 
-    log = open('./dps_record.txt', 'a')
+    log = open('./record/dps_record.txt', 'a')
 
     curr, num = 0, 1000
     start = time.time()
