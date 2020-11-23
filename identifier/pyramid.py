@@ -9,7 +9,6 @@ def get_distance(u, v, params):
     
     # 将参数解包
     cx, cy, dx, dy, focal = params[:5]
-
     # 计算 u 的归一化方向矢量
     x, y = (u[0] - cx) * dx, (u[1] - cy) * dy
     norm = np.sqrt(x * x + y * y + focal * focal)
@@ -359,9 +358,10 @@ def reProjection(src, attitude, centers):
 
     # 各项参数
     h, w = 2048, 2048
-    cx, cy, dx, dy, fov = [1024, 1024, 0.0055, 0.0055, 25.45]
-    f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
-
+    cx, cy, dx, dy, f = [1024, 1024, 0.0055, 0.0055, 25]
+    fov = np.arctan((cx * dx) / f) * 180 / np.pi * 2
+    # f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
+    # print(fov)
     # 角度转换为弧度制
     pitch, yaw, roll = np.array(attitude) * np.pi / 180
 
@@ -402,7 +402,7 @@ def reProjection(src, attitude, centers):
             star = allStar[:, i]
             # 计算投影在图像平面的坐标
             x = - f * (star[0] / star[2]) / dx + cx
-            y = - f * (star[1] / star[2]) / dy + cy - 1024
+            y = - f * (star[1] / star[2]) / dy + cy
             # 筛选落在图像中的星保存到 stars 中
             if x > 0 and x < src.shape[1] and y > 0 and y < src.shape[0]:
                 stars[cnt, :5] = catalog[i, :5]
@@ -425,11 +425,10 @@ def reProjection(src, attitude, centers):
     # 计算有效识别数
     iden = 0
     for center in centers:
-        center[1] -= 1024
         for star in stars:
-            if np.linalg.norm((center[:2] - star[5:7])) < 10:
+            if np.linalg.norm((center[:2] - star[5:7])) < 6:
                 iden += 1
-
+                break
     # 返回图像
     return resImg, iden     
 
@@ -448,7 +447,7 @@ def identify(centers):
     group_cnt = np.load('./params/group_cnt.npy').astype(np.int32)
 
     # 星敏感器参数 （主点、像元尺寸、焦距等）
-    params = np.array([1024, 1024, 0.0055, 0.0055, 25, 0, 0, 0, 0])
+    params = np.array([1024, 1024, 0.0055, 0.0055, 25.0, 0, 0, 0, 0])
 
     res = pyramid(centers, params, 1, 6, sao60_uniform, dist20final, group_start, group_cnt)
     return res[-1] * 180 / np.pi
@@ -457,7 +456,7 @@ if __name__ == "__main__":
     
     # 读取质心
     centers = np.load('./params/centers.npy')
-    centers[:, 1] += 1024
+    centers[:, 1]
     print(centers)
     res = identify(centers)
     print(res[-1] * 180 / np.pi)

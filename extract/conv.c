@@ -446,13 +446,13 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
         if(size[i] > 0){
             double cx = 0, cy = 0, gray = 0.0;
             for(int j = 0; j < size[i]; ++j){
-                cx += point[i][j][0];
-                cy += point[i][j][1];
+                cx += point[i][j][0] * src[point[i][j][0] * w + point[i][j][1]];
+                cy += point[i][j][1] * src[point[i][j][0] * w + point[i][j][1]];
                 gray += src[point[i][j][0] * w + point[i][j][1]];
             }
             
-            cx /= size[i];
-            cy /= size[i];
+            cx /= gray;
+            cy /= gray;
             gray /= size[i];
             centers[*ccnt][0] = cy;
             centers[*ccnt][1] = cx;

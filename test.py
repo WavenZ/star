@@ -18,18 +18,17 @@ def get_mse(real, predict):
 if __name__ == "__main__":
 
     # 读文件
-    filename = r'./graph/5_1.png'
+    filename = r'./graph/test_10_5.png'
     src = cv2.imread(filename, 0)
     
     # 估计旋转中心
     src = cv2.blur(src, (3, 3))
     rot_center = ae.Direction_estimate(src)
     print('Rcenter:', rot_center)
-
+    # rot_center = [999999999, 999999999]
     # 星点提取、质心定位
     retImg, centers, cnt = ex.extract(src.copy(), rot_center)
     centers = centers[:cnt]
-    centers[:, 1] += 1024
     print('Stars:', cnt)
 
     # 星图识别、姿态解算

@@ -37,8 +37,9 @@ def genStatic(attitude):
 
     # 各项参数
     h, w = 2048, 2048
-    cx, cy, dx, dy, fov = [h / 2, w / 2, 0.0055, 0.0055, 25.5]
-    f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
+    cx, cy, dx, dy, f = [h / 2, w / 2, 0.0055, 0.0055, 25.0]
+    fov = np.arctan((cx * dx) / f) * 180 / np.pi * 2
+
 
     # 角度转换为弧度制
     ra, dec, rol = np.array(attitude) * np.pi / 180
@@ -102,82 +103,10 @@ def genStatic(attitude):
     # 返回图像
     return resImg
 
-def reProjection(src, attitude, params):
-
-    # 读星库
-    catalog = np.loadtxt('./params/sao60.txt', dtype = float)
-
-    # 各项参数
-    h, w = 2048, 2048
-    cx, cy, dx, dy, fov = params
-    f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
-
-    # 角度转换为弧度制
-    pitch, yaw, roll = np.array(attitude) * np.pi / 180
-
-    # 姿态转换矩阵：天球坐标系 -> 星敏感器坐标系
-    r11 = - np.cos(roll) * np.sin(pitch) - np.sin(roll) * np.sin(yaw) * np.cos(pitch)
-    r12 = np.cos(roll) * np.cos(pitch) - np.sin(roll) * np.sin(yaw) * np.sin(pitch)
-    r13 = np.sin(roll) * np.cos(yaw)
-    r21 = np.sin(roll) * np.sin(pitch) - np.cos(roll) * np.sin(yaw) * np.cos(pitch)
-    r22 = - np.sin(roll) * np.cos(pitch) - np.cos(roll) * np.sin(yaw) * np.sin(pitch)
-    r23 = np.cos(roll) * np.cos(yaw)
-    r31 = np.cos(yaw) * np.cos(pitch)
-    r32 = np.cos(yaw) * np.sin(pitch)
-    r33 = np.sin(yaw)
-
-    R = np.array([[r11, r12, r13], 
-                    [r21, r22, r23], 
-                    [r31, r32, r33]])
-    
-    # 视轴指向
-    S = R.T.dot(np.array([0, 0, 1]).T)
-
-    # 所有星点的天球坐标系下的坐标
-    allStar = catalog[:, 1: 4]
-
-    # 所有星点方向与视轴方向的夹角
-    allDist = np.arccos(allStar.dot(S))
-
-    # 将天球坐标系转换到星敏感器坐标系
-    allStar = R.dot(allStar.T)
-
-    # 过滤出投影在图像中的星点并保存其相关信息
-    cnt = 0
-    stars = np.zeros((500, 7))
-    for i in range(catalog.shape[0]):
-        # 过滤与视轴夹角较大的恒星
-        if allDist[i] < 0.75 * fov * np.pi / 180:
-            # 取出该星点
-            star = allStar[:, i]
-            # 计算投影在图像平面的坐标
-            x = - f * (star[0] / star[2]) / dx + cx
-            y = - f * (star[1] / star[2]) / dy + cy - 1024
-            # 筛选落在图像中的星保存到 stars 中
-            if x > 0 and x < src.shape[1] and y > 0 and y < src.shape[0]:
-                stars[cnt, :5] = catalog[i, :5]
-                stars[cnt, 5:] = [x, y]
-                cnt += 1
-    stars = stars[:cnt, :]
-  
-    # 建立图像
-    resImg = Image.fromarray(src).convert('RGB')
-    font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf', 20)
-    anno = ImageDraw.Draw(resImg)
-    
-    # 画星点和标注星等信息
-    for star in stars:
-        anno.ellipse((star[5] - 4, star[6] - 4, star[5] + 4, star[6] + 4), fill = 'red')
-        anno.text((star[5] + 10, star[6] + 10), '{:.2f}'.format(star[4]), font = font, fill = 'red')
-        
-    resImg = np.array(resImg)
-
-    # 返回图像
-    return resImg  
-
 if __name__ == "__main__":
 
-    attitude = [313.695954319231, 25.7233297886105, 115.765983323676]
+    # attitude = [313.695954319231, 25.7233297886105, 115.765983323676]
+    attitude = [30.0, 45.0, 60.0]
     params = [1024, 1024, 0.0055, 0.0055, 25]
 
     res = genStatic(attitude)
@@ -191,6 +120,7 @@ if __name__ == "__main__":
     # plt.figure()
     # plt.imshow(res2, cmap='gray', vmin=0, vmax=255)
     # Save
-    img = Image.fromarray(res[1024:, :])
+    # img = Image.fromarray(res[1024:, :])
+    img = Image.fromarray(res)
     img = img.convert('L')
     img.save('./graph/test.png')
