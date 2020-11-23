@@ -214,7 +214,7 @@ def extract(src, theta):
     centers = np.zeros((1000, 3)).astype(np.float)
 
     # lib = npct.load_library("test",".")
-    lib = cdll.LoadLibrary('./conv.so')
+    lib = cdll.LoadLibrary('./extract/conv.so')
     lib.conv_and_bin.argtypes= [npct.ndpointer(dtype=np.uint8, ndim=src.ndim, shape=src.shape, flags="C_CONTIGUOUS"),
         c_int, c_int, c_double, c_double, npct.ndpointer(dtype=np.uint8, ndim=res.ndim, shape=res.shape, flags="C_CONTIGUOUS"),
         npct.ndpointer(dtype=np.float, ndim=kernels.ndim, shape=kernels.shape, flags="C_CONTIGUOUS"),

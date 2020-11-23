@@ -18,7 +18,7 @@ def get_mse(real, predict):
 if __name__ == "__main__":
 
     # 读文件
-    filename = r'./graph/10_5.png'
+    filename = r'./graph/5_1.png'
     src = cv2.imread(filename, 0)
     
     # 估计旋转中心

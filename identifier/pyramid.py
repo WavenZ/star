@@ -355,7 +355,7 @@ def pyramid(centers_origin, params, err, match_min, catalog, pairs_catalog, grou
 def reProjection(src, attitude, params):
 
     # 读星库
-    sao60 = np.loadtxt('sao60.txt', dtype = float)
+    sao60 = np.loadtxt('./params/sao60.txt', dtype = float)
 
     # 各项参数
     h, w = 2048, 2048
@@ -445,10 +445,6 @@ def identify(centers):
     return pyramid(centers, params, 1, 6, sao60_uniform, dist20final, group_start, group_cnt)
 
 if __name__ == "__main__":
-    
-
-
-
     
     # 读取质心
     centers = np.load('./params/centers.npy')
