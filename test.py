@@ -24,19 +24,21 @@ if __name__ == "__main__":
     # 估计旋转中心
     src = cv2.blur(src, (3, 3))
     rot_center = ae.Direction_estimate(src)
-    print('rot_center:', rot_center)
+    print('Rcenter:', rot_center)
 
     # 星点提取、质心定位
     retImg, centers, cnt = ex.extract(src.copy(), rot_center)
     centers = centers[:cnt]
+    centers[:, 1] += 1024
+    print('Stars:', cnt)
 
     # 星图识别、姿态解算
-    centers[:, 1] += 1024
-    res = ip.identify(centers)[-1] * 180 / np.pi
-    print('attitude:', res)
+    att = ip.identify(centers)
+    print('Attitude:', att)
     
     # 重投影
-    retImg = ip.reProjection(retImg, res, [1024, 1024, 0.0055, 0.0055, 25.45])
+    retImg, iden = ip.reProjection(retImg, att, centers)
+    print('Identified:', iden)
     plt.figure()
     plt.imshow(retImg)
     plt.show()

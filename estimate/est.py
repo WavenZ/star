@@ -275,7 +275,7 @@ def Direction_estimate(image):
     # plt.imshow(image, cmap = 'gray')
     # plt.show()
     if len(Theta) < 2:
-        return [99999, 99999]
+        return [999999999, 999999999]
     # print(Theta)
 
     Theta = np.vstack((Theta, Intercept, Linear)).T

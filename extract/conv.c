@@ -20,6 +20,10 @@ typedef unsigned char uint8;
 #define MAX_COMNUM      200000
 #define MAX_PIXEL       1000
 
+enum MODE{
+    STATIC, DYNAMIC
+}mode;
+
 /* Queue for bfs. */
 int queue[MAX_SIZE];
 int front, back;
@@ -260,7 +264,7 @@ void conv(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
         Convolution.
     */
     // printf("%lf, %lf\n", x0, y0);
-    if(fabs(x0 - 99999) + fabs(y0 - 99999) < EPS){
+    if(fabs(x0 - 999999999) + fabs(y0 - 999999999) < EPS){
         for(int i = 0; i < h; ++i){
             for(int j = 0; j < w; ++j){
                 res[i * w + j] = src[i * w + j];
@@ -295,6 +299,7 @@ void conv(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
     }
 }
 
+
 void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res, 
                                     double kernels[181][KERNEL_SIZE][KERNEL_SIZE],
                                     double centers[1000][3], int* ccnt){
@@ -302,6 +307,13 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
     // printf("\033[1m\033[;33m[call conv() in conv.dll ...]\033[0m\n");
     // printf("\033[1m\033[;33m[(h, w) = (%d, %d) (x0, y0) = (%.2lf, .%2lf)]\033[0m\n", h, w, x0, y0);
     
+    /* Set mode of image */
+    if(fabs(x0 - 999999999) + fabs(y0 - 999999999) > EPS){
+        mode = DYNAMIC;
+    }else{
+        mode = STATIC;
+    }
+
     /* Clear some global variable. */
     clear();
 
@@ -361,20 +373,31 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
                         }
                     }
                 }
-                /* Clear small domains. */
-                if(size[cnt] < 20){
-                    for(int i = 0; i < size[cnt]; ++i){
-                        res[point[cnt][i][0] * w + point[cnt][i][1]] = 0;
-                    }
-                    size[cnt] = 0;
-                }else 
-                    cnt++;
+                if(mode == DYNAMIC){
+                    /* Clear small domains. */
+                    if(size[cnt] < 20){
+                        for(int i = 0; i < size[cnt]; ++i){
+                            res[point[cnt][i][0] * w + point[cnt][i][1]] = 0;
+                        }
+                        size[cnt] = 0;
+                    }else 
+                        cnt++;
+                }else{
+                    /* Clear small domains. */
+                    if(size[cnt] < 5){
+                        for(int i = 0; i < size[cnt]; ++i){
+                            res[point[cnt][i][0] * w + point[cnt][i][1]] = 0;
+                        }
+                        size[cnt] = 0;
+                    }else 
+                        cnt++;
+                }
+
             }
         }
     } 
-
     /* Connected domain analysis and star fix. */
-    if(fabs(x0 - 99999) + fabs(y0 - 99999) > EPS){
+    if(mode == DYNAMIC){
         
         /* Update endpoints of each domain. */
         for(int i = 0; i < cnt; ++i){
@@ -402,23 +425,20 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
             }
         }
         // printf("%d\n", merge_cnt);
-
-    }
-
-    /* Clear small domains after the merge. */
-    for(int i = 0; i < cnt; ++i){
-        if(size[i] <= 50){
-            for(int j = 0; j < size[i]; ++j){
-                res[point[i][j][0] * w + point[i][j][1]] = 0;
-            }
-            size[i] = 0;
-        }else{
-            for(int j = 0; j < size[i]; ++j){
-                res[point[i][j][0] * w + point[i][j][1]] = 255;
+        /* Clear small domains after the merge. */
+        for(int i = 0; i < cnt; ++i){
+            if(size[i] <= 50){
+                for(int j = 0; j < size[i]; ++j){
+                    res[point[i][j][0] * w + point[i][j][1]] = 0;
+                }
+                size[i] = 0;
+            }else{
+                for(int j = 0; j < size[i]; ++j){
+                    res[point[i][j][0] * w + point[i][j][1]] = 255;
+                }
             }
         }
     }
-    
 
     /* Update the center of each star. */
     *ccnt = 0;

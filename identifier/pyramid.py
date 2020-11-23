@@ -352,14 +352,14 @@ def pyramid(centers_origin, params, err, match_min, catalog, pairs_catalog, grou
     
     return smap, pb, q, att
     
-def reProjection(src, attitude, params):
+def reProjection(src, attitude, centers):
 
     # 读星库
     catalog = np.loadtxt('./params/sao60.txt', dtype = float)
 
     # 各项参数
     h, w = 2048, 2048
-    cx, cy, dx, dy, fov = params
+    cx, cy, dx, dy, fov = [1024, 1024, 0.0055, 0.0055, 25.45]
     f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
 
     # 角度转换为弧度制
@@ -409,7 +409,7 @@ def reProjection(src, attitude, params):
                 stars[cnt, 5:] = [x, y]
                 cnt += 1
     stars = stars[:cnt, :]
-  
+
     # 建立图像
     resImg = Image.fromarray(src).convert('RGB')
     font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf', 20)
@@ -422,8 +422,16 @@ def reProjection(src, attitude, params):
         
     resImg = np.array(resImg)
 
+    # 计算有效识别数
+    iden = 0
+    for center in centers:
+        center[1] -= 1024
+        for star in stars:
+            if np.linalg.norm((center[:2] - star[5:7])) < 10:
+                iden += 1
+
     # 返回图像
-    return resImg        
+    return resImg, iden     
 
 def identify(centers):
     
@@ -442,7 +450,8 @@ def identify(centers):
     # 星敏感器参数 （主点、像元尺寸、焦距等）
     params = np.array([1024, 1024, 0.0055, 0.0055, 25, 0, 0, 0, 0])
 
-    return pyramid(centers, params, 1, 6, sao60_uniform, dist20final, group_start, group_cnt)
+    res = pyramid(centers, params, 1, 6, sao60_uniform, dist20final, group_start, group_cnt)
+    return res[-1] * 180 / np.pi
 
 if __name__ == "__main__":
     
