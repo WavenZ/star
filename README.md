@@ -94,6 +94,11 @@ if __name__ == "__main__":
 import cv2
 from cv2 import cv2
 
+import estimate.est as ae
+import extract.extract as ex
+import generator.gen_dynamic as gd
+import identifier.pyramid as ip
+
 if __name__ == "__main__":
 
   src = cv2.imread('./graph/5_1.png')
