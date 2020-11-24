@@ -360,8 +360,7 @@ def reProjection(src, attitude, centers):
     h, w = 2048, 2048
     cx, cy, dx, dy, f = [1024, 1024, 0.0055, 0.0055, 25]
     fov = np.arctan((cx * dx) / f) * 180 / np.pi * 2
-    # f = (cx * dx) / np.tan(fov / 2 * np.pi / 180)
-    # print(fov)
+
     # 角度转换为弧度制
     pitch, yaw, roll = np.array(attitude) * np.pi / 180
 

@@ -276,7 +276,7 @@ def Direction_estimate(image):
     # plt.show()
     if len(Theta) < 2:
         return [999999999, 999999999]
-    # print(Theta)
+    print(np.array(Theta) * 180 / np.pi)
 
     Theta = np.vstack((Theta, Intercept, Linear)).T
 
@@ -308,7 +308,7 @@ def Direction_estimate(image):
             Res.append([x, y])
 
     # print(Res)
-    # print(Res, sep='\n')
+    print(np.array(Res))
     Res = np.array(Res)
     Use = Res
     pos = Res[np.where(Res[:, 0] >  0)]
@@ -349,7 +349,7 @@ def Direction_estimate(image):
     '''
 
     # S[0], S[1] = image.shape[0] - S[1], S[0]
-    S[0] = image.shape[0] - S[0]
+    S[1] = image.shape[1] - S[1]
     # print(np.arctan(S[1] / S[0]) * 180 / np.pi)
     return S
 

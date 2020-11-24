@@ -223,3 +223,11 @@ def extract(src, theta):
 
     lib.conv_and_bin(src, c_int(src.shape[0]), c_int(src.shape[1]), c_double(x0), c_double(y0), res, kernels, centers, pointer(cnt))
     return res, centers.copy(), cnt.value
+
+if __name__ == "__main__":
+    kernels = []
+    for alpha in range(-90, 91):
+        kernels.append(get_kernel(13, 3, alpha))
+    plt.figure()
+    plt.imshow(kernels[90], cmap='gray')
+    plt.show()

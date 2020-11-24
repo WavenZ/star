@@ -18,7 +18,7 @@ def get_mse(real, predict):
 if __name__ == "__main__":
 
     # 读文件
-    filename = r'./graph/test_10_5.png'
+    filename = r'./graph/test.png'
     src = cv2.imread(filename, 0)
     
     # 估计旋转中心
@@ -26,6 +26,7 @@ if __name__ == "__main__":
     rot_center = ae.Direction_estimate(src)
     print('Rcenter:', rot_center)
     # rot_center = [999999999, 999999999]
+
     # 星点提取、质心定位
     retImg, centers, cnt = ex.extract(src.copy(), rot_center)
     centers = centers[:cnt]
@@ -39,5 +40,10 @@ if __name__ == "__main__":
     retImg, iden = ip.reProjection(retImg, att, centers)
     print('Identified:', iden)
     plt.figure()
+    # retImg = retImg.astype(np.int32)
+    # retImg[np.where(retImg > 255)] = 255
+    # plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
     plt.imshow(retImg)
+    if rot_center[0] != 999999999:
+        plt.scatter(rot_center[0], rot_center[1], s = 1)
     plt.show()

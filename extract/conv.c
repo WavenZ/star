@@ -319,7 +319,6 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
 
     /* Convolution and binarization. */
     conv(src, h, w, x0, y0, res, kernels);
-
     /* Calculate the threshold of binarization. */
     int thresh = 256;
     int pos[4][2] = {{16, 0}, {16, 256}, {16, 512}, {16, 1024}};
@@ -384,7 +383,7 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
                         cnt++;
                 }else{
                     /* Clear small domains. */
-                    if(size[cnt] < 5){
+                    if(size[cnt] < 6){
                         for(int i = 0; i < size[cnt]; ++i){
                             res[point[cnt][i][0] * w + point[cnt][i][1]] = 0;
                         }
@@ -398,7 +397,6 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
     } 
     /* Connected domain analysis and star fix. */
     if(mode == DYNAMIC){
-        
         /* Update endpoints of each domain. */
         for(int i = 0; i < cnt; ++i){
             if(size[i] <= 10) continue;
