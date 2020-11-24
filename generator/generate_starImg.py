@@ -1,3 +1,5 @@
+# -*- coding:UTF-8 -*-
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -91,7 +93,7 @@ def genStatic(attitude):
     # 建立图像
     resImg = np.zeros((h, w))
     for star in stars:
-        put_stars(resImg, star[6], star[5], 10000 / pow(2.51, star[4] - 2), delta = 1.2, winvisible = False, winradius = 10)
+        put_stars(resImg, star[6], star[5], 10000 / pow(2.51, star[4] - 2), delta = 1.0, winvisible = False, winradius = 10)
 
     # 添加噪声
     resImg += np.random.randn(h, w) * 3 + 10
@@ -183,7 +185,7 @@ def genDynamic(attitude, attSpd, expo):
     
 
         for star in stars:
-            put_stars(resImg, star[6], star[5], 120 / pow(2.51, star[4] - 2), delta = 1.2, winvisible = False, winradius = 10)
+            put_stars(resImg, star[6], star[5], 120 / pow(2.51, star[4] - 2), delta = 1.0, winvisible = False, winradius = 10)
     # 添加噪声
     resImg += np.random.randn(h, w) * 3 + 10
 
