@@ -74,11 +74,18 @@ if __name__ == "__main__":
 import cv2
 from cv2 import cv2
 
+import estimate.est as ae
+
 if __name__ == "__main__":
 
-  src = cv2.imread('./graph/5_1.png')
-  src = cv2.blur(src, (3, 3))
-  rot_center = ae.Direction_estimate(src)
+    # Read source image
+    filename = r'./graph/test.png'
+    src = cv2.imread(filename, 0)
+    
+    # Estimate the rotation-center
+    src = cv2.blur(src, (3, 3))
+    rot_center = ae.Direction_estimate(src)
+    print('Rcenter:', rot_center)
 
 ```
 4. 星点提取、质心定位
@@ -86,17 +93,24 @@ if __name__ == "__main__":
 import cv2
 from cv2 import cv2
 
+import estimate.est as ae
+import extract.extract as ex
+
 if __name__ == "__main__":
 
-  src = cv2.imread('./graph/5_1.png')
-  src = cv2.blur(src, (3, 3))
-  
-  # 估计旋转中心
-  rot_center = ae.Direction_estimate(src)
-  
-  # 星点提取、质心定位
-  retImg, centers, cnt = ex.extract(src.copy(), rot_center)
-  centers = centers[:cnt]
+    # Read source image
+    filename = r'./graph/test.png'
+    src = cv2.imread(filename, 0)
+    
+    # Estimate the rotation-center
+    src = cv2.blur(src, (3, 3))
+    rot_center = ae.Direction_estimate(src)
+    print('Rcenter:', rot_center)
+    
+    # Star extraction and centroid location
+    retImg, centers, cnt = ex.extract(src.copy(), rot_center)
+    centers = centers[:cnt]
+    print('Stars:', cnt)
 ```
 5. 星图识别、姿态解算、重投影
 ```python
@@ -105,7 +119,6 @@ from cv2 import cv2
 
 import estimate.est as ae
 import extract.extract as ex
-import generator.gen_dynamic as gd
 import identifier.pyramid as ip
 
 if __name__ == "__main__":
