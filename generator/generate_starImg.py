@@ -26,8 +26,7 @@ def put_stars(img, x0, y0, E, delta = 1.3, winvisible = False, winradius = 50):
         x = np.linspace(up, down - 1, down - up)
         y = np.linspace(left, right - 1, right - left)
         X, Y = np.meshgrid(x, y)
-        X = X.T
-        Y = Y.T
+        X, Y = X.T, Y.T
         if winvisible is True:
             img[up : down, left : right] += 50
         img[up : down, left : right] += E / (2 * np.pi * delta ** 2) * np.exp(-((X - x0)**2 + (Y - y0)**2) / (2 * delta ** 2))
@@ -40,6 +39,8 @@ def genStatic(attitude):
     # 各项参数
     h, w = 2048, 2048
     cx, cy, dx, dy, f = [h / 2, w / 2, 0.0055, 0.0055, 25.0]
+    
+    # 计算fov
     fov = np.arctan((cx * dx) / f) * 180 / np.pi * 2
 
 
@@ -200,7 +201,7 @@ if __name__ == "__main__":
 
     # attitude = [313.695954319231, 25.7233297886105, 115.765983323676]
     attitude = [12.0, 24.0, 36.0]
-    attspd = [5, 5, 5]
+    attspd = [5, 5, 10]
     params = [1024, 1024, 0.0055, 0.0055, 25]
 
     res = genDynamic(attitude, attspd, 100)

@@ -208,6 +208,8 @@ def pyramid(centers_origin, params, err, match_min, catalog, pairs_catalog, grou
     if num_use < 3:
         return - np.zeros(centers.shape[0])
 
+    centers_origin = centers_origin[np.argsort(centers_origin[:,2])]
+
     centers = centers_origin[:num_use, :]
 
     # 星表的大小
@@ -233,6 +235,8 @@ def pyramid(centers_origin, params, err, match_min, catalog, pairs_catalog, grou
     # 对称化两个矩阵
     gns = gns + gns.T
     dis = dis + dis.T
+
+    # 开始匹配
     for dj in range(num_use - 2):
         for dk in range(num_use - dj - 1):
             for i in range(num_use - dj - dk):
