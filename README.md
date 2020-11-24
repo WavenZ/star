@@ -29,34 +29,43 @@
 #### 项目使用示例
 
 1. 静态仿真星图生成
-```cpp
+```python
 import matplotlib.pyplot as plt
-import generator.gen_static as gs
+import generator.generate_starImg as ggs
 
 if __name__ == "__main__":
+    
+    # Attitude: [yaw, pitch, roll]
+    att = [20, 40, 60]
 
-    G = gs.StarGenerator('sao60')
-    pitch, yaw, roll = 10, 30, 60
-    img, starnum = G.generate(pitch, yaw, roll, winvisible = False)
-    print('[starnum]:', starnum)
+    # Generate
+    retImg = ggs.genStatic(att)
+
+    # Show
     plt.figure()
-    plt.imshow(img, cmap='gray', )
+    plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
     plt.show()
+
 ```
 2. 动态仿真星图生成
 ```python
 import matplotlib.pyplot as plt
-import generator.gen_dynamic as gd
+import generator.generate_starImg as ggs
 
 if __name__ == "__main__":
+    
+    # Attitude: (yaw, pitch, roll)
+    att = [20, 40, 60]
 
-    G = gd.StarGenerator('sao60')
-    pitch, yaw, roll = 10, 30, 60
-    pitchspd, yawspd, rollspd = 0, 5, 0
-    img, starnum = G.generate(pitch, yaw, roll, pitchspd, yawspd, rollspd, winvisible = False)
-    print('[starnum]:', starnum)
+    # Angle Velocity: (yaw, pitch, roll)
+    dps = [5, 5, 5]
+
+    # Generate
+    retImg = ggs.genDynamic(att, dps, 100)
+
+    # Show
     plt.figure()
-    plt.imshow(img, cmap='gray', )
+    plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
     plt.show()
 
 ```
@@ -101,23 +110,35 @@ import identifier.pyramid as ip
 
 if __name__ == "__main__":
 
-  src = cv2.imread('./graph/5_1.png')
-  src = cv2.blur(src, (3, 3))
-  
-  # 估计旋转中心
-  rot_center = ae.Direction_estimate(src)
-  
-  # 星点提取、质心定位
-  retImg, centers, cnt = ex.extract(src.copy(), rot_center)
-  centers = centers[:cnt]
-  
-  # 星图识别、姿态解算
-  res = ip.identify(centers)[-1] * 180 / np.pi
-  
-  # 重投影
-  retImg = ip.reProjection(retImg, res, [1024, 1024, 0.0055, 0.0055, 25.5])
-  plt.figure()
-  plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
-  plt.show()
+    # Read source image
+    filename = r'./graph/test.png'
+    src = cv2.imread(filename, 0)
+    
+    # Estimate the rotation-center
+    src = cv2.blur(src, (3, 3))
+    rot_center = ae.Direction_estimate(src)
+    print('Rcenter:', rot_center)
+    # rot_center = [999999999, 999999999]
+
+    # Star extraction and centroid location
+    retImg, centers, cnt = ex.extract(src.copy(), rot_center)
+    centers = centers[:cnt]
+    print('Stars:', cnt)
+
+    # Star identification
+    att = ip.identify(centers)
+    print('Attitude:', att)
+    
+    # Re-projection
+    retImg, iden = ip.reProjection(retImg, att, centers)
+    print('Identified:', iden)
+    plt.figure()
+    # retImg = retImg.astype(np.int32)
+    # retImg[np.where(retImg > 255)] = 255
+    # plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
+    plt.imshow(retImg)
+    if rot_center[0] != 999999999:
+        plt.scatter(rot_center[0], rot_center[1], s = 1)
+    plt.show()
 ```
 
