@@ -29,9 +29,12 @@ if __name__ == "__main__":
     print('Stars:', cnt)
 
     # 星图识别、姿态解算
-    att = iden.identify(centers)
+    att, starId = iden.identify(centers)
     print('Attitude:', att)
     
+    starId = starId[np.where(starId >= 0)]
+    # print(starId[np.where(starId >= 0)])
+
     # 重投影
     retImg, iden = iden.reProjection(retImg, att, centers)
     print('Identified:', iden)
@@ -39,8 +42,8 @@ if __name__ == "__main__":
     # 显示
     plt.figure()
     plt.imshow(retImg)
-    if rot_center[0] != 999999999:
-        plt.scatter([rot_center[0]], [rot_center[1]], color='red')
-        plt.plot([rot_center[0], rot_center[0]], [rot_center[1] - 200, rot_center[1] + 200], color='red')
-        plt.plot([rot_center[0] - 200, rot_center[0] + 200], [rot_center[1], rot_center[1]], color='red')
+    # if rot_center[0] != 999999999:
+    #     plt.scatter([rot_center[0]], [rot_center[1]], color='red')
+    #     plt.plot([rot_center[0], rot_center[0]], [rot_center[1] - 200, rot_center[1] + 200], color='red')
+    #     plt.plot([rot_center[0] - 200, rot_center[0] + 200], [rot_center[1], rot_center[1]], color='red')
     plt.show()

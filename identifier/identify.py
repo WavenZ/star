@@ -306,20 +306,20 @@ def pyramid(centers_origin, params, err, match_min, catalog, pairs_catalog, grou
                                     t1i[2] * v2i[0] - t1i[0] * v2i[2], 
                                     t1i[0] * v2i[1] - t1i[1] * v2i[0]]).T
                         p1 = ww_cal[0, :].dot(t)
-                        t1i = catalog[candidate[1], 1: 4]
-                        v2i = catalog[candidate[2], 1: 4]
+                        t1i = catalog[candidate[1] - 1, 1: 4]
+                        v2i = catalog[candidate[2] - 1, 1: 4]
                         t = np.array([t1i[1] * v2i[2] - t1i[2] * v2i[1],
                                     t1i[2] * v2i[0] - t1i[0] * v2i[2],
                                     t1i[0] * v2i[1] - t1i[1] * v2i[0]])
-                        p2 = catalog[candidate[0], 1: 4].dot(t)
+                        p2 = catalog[candidate[0] - 1, 1: 4].dot(t)
                         
                         if p1 * p2 < 0:
                             keep_index[i] = 0
                             continue
 
-                        d1 = np.arccos(catalog[candidate[0], 1: 4] * catalog[candidate[1], 1 : 4].T) - dis[candidate[3], candidate[4]]
-                        d2 = np.arccos(catalog[candidate[1], 1: 4] * catalog[candidate[2], 1 : 4].T) - dis[candidate[4], candidate[5]]
-                        d3 = np.arccos(catalog[candidate[2], 1: 4] * catalog[candidate[0], 1 : 4].T) - dis[candidate[5], candidate[3]]
+                        d1 = np.arccos(catalog[candidate[0] - 1, 1: 4] * catalog[candidate[1] - 1, 1 : 4].T) - dis[candidate[3], candidate[4]]
+                        d2 = np.arccos(catalog[candidate[1] - 1, 1: 4] * catalog[candidate[2] - 1, 1 : 4].T) - dis[candidate[4], candidate[5]]
+                        d3 = np.arccos(catalog[candidate[2] - 1, 1: 4] * catalog[candidate[0] - 1, 1 : 4].T) - dis[candidate[5], candidate[3]]
                         candidate3s.append(np.hstack((candidate, [np.linalg.norm([d1, d2, d3])])))
                 
                 candidates = np.array(candidates)[np.where(keep_index)]
@@ -420,9 +420,19 @@ def reProjection(src, attitude, centers):
     
     # 画星点和标注星等信息
     for star in stars:
-        anno.ellipse((star[5] - 4, star[6] - 4, star[5] + 4, star[6] + 4), fill = 'red')
-        anno.text((star[5] + 10, star[6] + 10), '{:.2f}'.format(star[4]), font = font, fill = 'red')
-        
+        match = False
+        for center in centers:
+           if np.linalg.norm((center[:2] - star[5:7])) < 6:
+               match = True
+        if match:
+            anno.ellipse((star[5] - 4, star[6] - 4, star[5] + 4, star[6] + 4), fill = 'green')
+            anno.text((star[5] + 10, star[6] + 10), '{:.2f}'.format(star[4]), font = font, fill = 'green')
+        else:
+            anno.ellipse((star[5] - 4, star[6] - 4, star[5] + 4, star[6] + 4), fill = 'red')
+            anno.text((star[5] + 10, star[6] + 10), '{:.2f}'.format(star[4]), font = font, fill = 'red')
+
+    # resImg.save('./graph/10_5_res_raw.png')
+
     resImg = np.array(resImg)
 
     # 计算有效识别数
@@ -441,7 +451,8 @@ def identify(centers):
     dist20final = np.load('./params/dist20final.npy')
     
     # sao60星表归一化 (4931 x 9)
-    sao60_uniform = np.load('./params/sao60_uniform.npy') 
+    sao60_uniform = np.load('./params/sao60_uniform.npy')
+    # sao60_uniform = np.vstack((sao60_uniform[0, :], sao60_uniform)) 
     
     # 将 dist20final 分成 1000 份之后，各个片段的起始位置 （1000 x 1）
     group_start = np.load('./params/group_start.npy').astype(np.int32)
@@ -453,7 +464,7 @@ def identify(centers):
     params = np.array([1024, 1024, 0.0055, 0.0055, 25.0, 0, 0, 0, 0])
 
     res = pyramid(centers, params, 1, 6, sao60_uniform, dist20final, group_start, group_cnt)
-    return res[-1] * 180 / np.pi
+    return res[-1] * 180 / np.pi, res[0]
 
 if __name__ == "__main__":
     

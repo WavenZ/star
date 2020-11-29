@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     # attitude = [313.695954319231, 25.7233297886105, 115.765983323676]
     attitude = [12.0, 24.0, 36.0]
-    attspd = [5, 5, 10]
+    attspd = [6, 6, 6]
     params = [1024, 1024, 0.0055, 0.0055, 25]
 
     res = genDynamic(attitude, attspd, 100)

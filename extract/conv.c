@@ -133,6 +133,8 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
      * Try two merge two domains.
      */
 
+
+
     /* Calc minimun distance */
     int mindis = 0x7fffffff, maxdis = 0;
     for(int i = 0; i <= 1; ++i){
@@ -146,7 +148,9 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
     if(mindis > 50 || maxdis > maxlen * 1.5){
         return 0;
     }
-
+    // printf("(%d, %d) (%d, %d) -> (%d, %d) (%d, %d)\n", endpoint[p][0][0], endpoint[p][0][1], endpoint[p][1][0], endpoint[p][1][1],
+    //                                                    endpoint[q][0][0], endpoint[q][0][1], endpoint[q][1][0], endpoint[q][1][1]);
+   
     /* Get Le. */
     int x0, y0, x1, y1, dis = mindis;
     for(int i = 0; i <= 1; ++i){
@@ -170,6 +174,7 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
                 point_line(endpoint[p][1][0], endpoint[p][1][1], k, b) + 
                 point_line(endpoint[q][0][0], endpoint[q][0][1], k, b) +
                 point_line(endpoint[q][1][0], endpoint[q][1][1], k, b);
+    // printf("%lf\n", gap);
     if(gap > 3.14){
         return 0;
     }
@@ -193,8 +198,10 @@ int merge(int p, int q, uint8 *res, int w, int cx, int cy){
     k = (cx1 == cx0) ? 9999.9999 : ((cy1 - cy0) * 1.0 / (cx1 - cx0));
     b = cy1 - k * cx1;
 
-    // printf("** %lf, %lf\n", atan(k) * 180 / 3.1415926, atan(((cy0 + cy1) / 2 - cy) / ((cx0 + cx1) / 2 - cx)) * 180 / 3.1415926);
-    if(fabs(atan(k) * 180 / 3.1415926 + atan(((cy0 + cy1) / 2 - cy) / ((cx0 + cx1) / 2 - cx)) * 180 / 3.1415926) > 3){
+    // printf("** (%lf,%lf),(%lf,%lf) (%lf,%lf),(%d,%d) \n", cx0,cy0,cx1,cy1, (cx0+cx1)/2, (cy0+cy1)/2, cx, cy);
+    // printf("** (%lf,%lf) \n", atan(k) * 180 / 3.1415926, atan(((cx0 + cx1) / 2 - cy) / ((cy0 + cy1) / 2 - cx)) * 180 / 3.1415926);
+    // printf("** (%lf)\n", fabs(atan(k) * 180 / 3.1415926 + atan(((cx0 + cx1) / 2 - cy) / ((cy0 + cy1) / 2 - cx)) * 180 / 3.1415926));
+    if(fabs(atan(k) * 180 / 3.1415926 + atan(((cx0 + cx1) / 2 - cy) / ((cy0 + cy1) / 2 - cx)) * 180 / 3.1415926) > 3){
         // printf("   fail.\n");
         return 0;
     }     
@@ -319,9 +326,10 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
 
     /* Convolution and binarization. */
     conv(src, h, w, x0, y0, res, kernels);
+
     /* Calculate the threshold of binarization. */
     int thresh = 256;
-    int pos[4][2] = {{16, 0}, {16, 256}, {16, 512}, {16, 1024}};
+    int pos[4][2] = {{16+1024, 0}, {16+1024, 256}, {16+1024, 512}, {16+1024, 1024}};
     #pragma omp parallel for num_threads(NTHREAD)
     for(int k = 0; k < 4; ++k){
         int sum = 0;
@@ -338,7 +346,7 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
             }
         }
         var /= (128 * 128);
-        thresh = min(thresh, (int)(mean + sqrt(var) * 5));
+        thresh = min(thresh, (int)(mean + sqrt(var) * 6));
     }
 
     /* Binarization. */
@@ -348,6 +356,7 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
             res[i * w + j] = (res[i * w + j] > thresh) ? 254 : 0;
         }
     }
+
 
     /* Get connected domain by bfs method. */ 
     int cnt = 0;
@@ -395,6 +404,7 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
             }
         }
     } 
+
     /* Connected domain analysis and star fix. */
     if(mode == DYNAMIC){
         /* Update endpoints of each domain. */
