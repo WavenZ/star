@@ -49,8 +49,9 @@ if __name__ == "__main__":
             
             # plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
             reals = np.load(file_path + '/' + '{}.npy'.format(image[:-4]))
+            reals[:, [0,1]] = reals[:, [1,0]]
             # print('{}.npy'.format(image[:-4]))
-            centers = centers[:cnt]
+            centers = centers[:cnt, :2]
 
             valid, total = 0, reals.shape[0]
             for center in centers:

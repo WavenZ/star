@@ -14,7 +14,8 @@ import time
 if __name__ == "__main__":
 
     # 读文件
-    filename = r'./graph/test.png'
+    filename = r'./zl/9-2.png'
+    # filename = r'./graph/t5_1.png'
     src = cv2.imread(filename, 0)
     
     # 估计旋转中心
@@ -27,6 +28,10 @@ if __name__ == "__main__":
     retImg, centers, cnt = ext.extract(src.copy(), rot_center)
     centers = centers[:cnt]
     print('Stars:', cnt)
+
+    # plt.figure()
+    # plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
+    # plt.show()
 
     # 星图识别、姿态解算
     att, starId = iden.identify(centers)

@@ -330,25 +330,41 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
     /* Calculate the threshold of binarization. */
     int thresh = 256;
     int pos[4][2] = {{16+1024, 0}, {16+1024, 256}, {16+1024, 512}, {16+1024, 1024}};
-    #pragma omp parallel for num_threads(NTHREAD)
-    for(int k = 0; k < 4; ++k){
-        int sum = 0;
-        for(int i = pos[k][0]; i < pos[k][0] + 128; ++i){
-            for(int j = pos[k][1]; j < pos[k][1] + 128; ++j){
-                sum += res[i * w + j];
-            }
+    // #pragma omp parallel for num_threads(NTHREAD)
+    // for(int k = 0; k < 4; ++k){
+    //     int sum = 0;
+    //     for(int i = pos[k][0]; i < pos[k][0] + 128; ++i){
+    //         for(int j = pos[k][1]; j < pos[k][1] + 128; ++j){
+    //             sum += res[i * w + j];
+    //         }
+    //     }
+    //     double mean = sum * 1.0 / (128 * 128);
+    //     double var = 0.0;
+    //     for(int i = pos[k][0]; i < pos[k][0] + 128; ++i){
+    //         for(int j = pos[k][1]; j < pos[k][1] + 128; ++j){
+    //             var += ((res[i * w + j] - mean) * (res[i * w + j] - mean));
+    //         }
+    //     }
+    //     var /= (128 * 128);
+    //     printf("%lf, %lf\n", mean, sqrt(var));
+    //     thresh = min(thresh, (int)(mean + sqrt(var) * 6));
+    // }
+    int sum = 0;
+    for(int i = 0; i < h; ++i){
+        for(int j = 0; j < w; ++j){
+            sum += res[i * w + j];
         }
-        double mean = sum * 1.0 / (128 * 128);
-        double var = 0.0;
-        for(int i = pos[k][0]; i < pos[k][0] + 128; ++i){
-            for(int j = pos[k][1]; j < pos[k][1] + 128; ++j){
-                var += ((res[i * w + j] - mean) * (res[i * w + j] - mean));
-            }
-        }
-        var /= (128 * 128);
-        thresh = min(thresh, (int)(mean + sqrt(var) * 6));
     }
-
+    double meang = sum * 1.0 / (h * w);
+    double var = 0.0;
+    for(int i = 0; i < h; ++i){
+        for(int j = 0; j < w; ++j){
+            var += ((res[i * w + j] - meang) * (res[i * w + j] - meang));
+        }
+    }
+    var /= (h * w);
+    printf("%lf, %lf\n", meang, sqrt(var));
+    thresh = meang + 6 * sqrt(var);
     /* Binarization. */
     #pragma omp parallel for num_threads(NTHREAD)
     for(int i = 0; i < h; ++i){
@@ -357,7 +373,7 @@ void conv_and_bin(uint8 *src, int h, int w, double x0, double y0, uint8 *res,
         }
     }
 
-
+    // return;
     /* Get connected domain by bfs method. */ 
     int cnt = 0;
     for(int i = KERNEL_SIZE / 2; i < h - KERNEL_SIZE / 2; ++i){

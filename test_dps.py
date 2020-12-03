@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import estimate.est as ae
 import extract.extract as ex
-import generator.gen_dynamic as gd
 import cv2
 import os
 import time
@@ -48,8 +47,9 @@ if __name__ == "__main__":
             
             # plt.imsave('./{}_extract1.png'.format(image),retImg, cmap = 'gray', vmin = 0, vmax = 255)
             reals = np.load(file_path + '/' + '{}.npy'.format(image[:-4]))
+            reals[:, [0,1]] = reals[:, [1,0]]
             # print('{}.npy'.format(image[:-4]))
-            centers = centers[:cnt]
+            centers = centers[:cnt, :2]
 
             valid, total = 0, reals.shape[0]
             for center in centers:
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             # print(reals)
             curr+=1
             log.write('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.3f}]\n'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
-            # print('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.2f}]'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
+            print('[Param = {} {:3}/{} \'{}\'   case: {:2}/{:2} = {:.3f}   total: {}/{} = {:.2f}]'.format(dps, curr, num, image, valid, total, valid / total, sum_valid, sum_total, sum_valid / sum_total))
             # plt.figure()
             # plt.imshow(retImg, cmap='gray', vmin=0, vmax=255)
             # plt.show()

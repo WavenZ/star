@@ -362,9 +362,10 @@ def reProjection(src, attitude, centers):
 
     # 各项参数
     h, w = 2048, 2048
-    cx, cy, dx, dy, f = [1024, 1024, 0.0055, 0.0055, 25]
+    cx, cy, dx, dy, f = [1024, 1024, 0.0055, 0.0055, 57]
+    # cx, cy, dx, dy, f = [1024, 1024, 0.0055, 0.0055, 25]
     fov = np.arctan((cx * dx) / f) * 180 / np.pi * 2
-
+    # print(fov)
     # 角度转换为弧度制
     pitch, yaw, roll = np.array(attitude) * np.pi / 180
 
@@ -461,7 +462,8 @@ def identify(centers):
     group_cnt = np.load('./params/group_cnt.npy').astype(np.int32)
 
     # 星敏感器参数 （主点、像元尺寸、焦距等）
-    params = np.array([1024, 1024, 0.0055, 0.0055, 25.0, 0, 0, 0, 0])
+    params = np.array([1024, 1024, 0.0055, 0.0055, 57, 0, 0, 0, 0])
+    # params = np.array([1024, 1024, 0.0055, 0.0055, 25, 0, 0, 0, 0])
 
     res = pyramid(centers, params, 1, 6, sao60_uniform, dist20final, group_start, group_cnt)
     return res[-1] * 180 / np.pi, res[0]
