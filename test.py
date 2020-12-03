@@ -14,8 +14,8 @@ import time
 if __name__ == "__main__":
 
     # 读文件
-    filename = r'./zl/9-2.png'
-    # filename = r'./graph/t5_1.png'
+    # filename = r'./zl/9-2.png'
+    filename = r'./graph/test_5_3.png'
     src = cv2.imread(filename, 0)
     
     # 估计旋转中心
