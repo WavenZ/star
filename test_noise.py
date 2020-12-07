@@ -1,3 +1,12 @@
+# -*- encoding: utf-8 -*-
+'''
+@File    :   test_noise.py
+@Time    :   2020/12/07 06:57:26
+@Author  :   wavenz 
+@Version :   1.0
+@Contact :   1435595081@qq.com
+'''
+
 import matplotlib.pyplot as plt
 import numpy as np
 import estimate.est as ae

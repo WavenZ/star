@@ -1,3 +1,12 @@
+# -*- encoding: utf-8 -*-
+'''
+@File    :   useless.py
+@Time    :   2020/12/07 06:57:48
+@Author  :   wavenz 
+@Version :   1.0
+@Contact :   1435595081@qq.com
+'''
+
 import matplotlib.pyplot as plt
 import generator.generate_starImg as ggs
 
